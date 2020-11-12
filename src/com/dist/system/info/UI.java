@@ -69,7 +69,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 super.valueChanged(e);
             }
         };
-
+        table.getTableHeader().setReorderingAllowed(false);
         table.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
         JScrollPane scrollPane = new JScrollPane(table);
         getContentPane().add(scrollPane, BorderLayout.CENTER);
