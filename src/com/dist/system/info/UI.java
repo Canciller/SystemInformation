@@ -3,7 +3,9 @@ package com.dist.system.info;
 import org.json.JSONObject;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -42,7 +44,31 @@ public class UI extends JFrame implements PropertyChangeListener {
         data = new Object[0][];
 
         model = new DefaultTableModel(data, headers);
-        final JTable table = new JTable(model);
+        final JTable table = new JTable(model){
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component comp = super.prepareRenderer(renderer, row, column);
+                Object value = getModel().getValueAt(row, column);
+
+                if (value.equals(false)) {
+                    comp.setForeground(Color.red);
+                    comp.setBackground(Color.red);
+                } else if (value.equals(true)) {
+                    comp.setForeground(Color.GREEN);
+                    comp.setBackground(Color.green);
+                }
+                else {
+                    comp.setForeground(Color.BLACK);
+                    comp.setBackground(Color.white);
+                }
+                return comp;
+            }
+
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                super.valueChanged(e);
+            }
+        };
 
         table.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
         JScrollPane scrollPane = new JScrollPane(table);
