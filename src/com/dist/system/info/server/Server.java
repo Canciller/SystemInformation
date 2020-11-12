@@ -233,8 +233,6 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                 String hostname = (String) evt.getOldValue();
                 Long rank = (Long) evt.getNewValue();
 
-                System.out.format("[Server] Client with new max rank %s %d\n", hostname, rank);
-
                 AsynchronousSocketChannel socketChannel = getClient(hostname);
 
                 if(!socketChannel.isOpen()) break;
@@ -249,7 +247,7 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                 }
 
                 // Ignore same hostname.
-                if(hostname.equals(socketAddress.getHostName().toUpperCase())) break;
+                //if(hostname.equals(socketAddress.getHostName().toUpperCase())) break;
 
                 // TODO: Implement server and client switching.
                 JSONObject data = new JSONObject();
