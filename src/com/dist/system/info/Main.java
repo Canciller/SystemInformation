@@ -2,68 +2,55 @@ package com.dist.system.info;
 
 import com.dist.system.info.client.Client;
 import com.dist.system.info.client.SystemInfo;
+import com.dist.system.info.server.Ranking;
 import com.dist.system.info.server.Server;
-import org.json.JSONObject;
-
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         try {
-            Scanner scanner = new Scanner(System.in);
+            // Port
+            int port = 25565;
+            // Server bind host.
+            String bindHost = "25.100.136.188";
 
-            System.out.print("Iniciar como servidor (Y/y): ");
-            String startAsServerResponse = scanner.next();
-
-            Boolean startAsServer = startAsServerResponse.equals("Y") || startAsServerResponse.equals("y");
-
-            Server server = null;
-
-            Client client = null;
+            // SystemInfo
             SystemInfo systemInfo = new SystemInfo();
 
-            if(startAsServer) {
-                server = new Server();
-                server.start("25.100.136.188", 25565);
+            // Ranking
+            Ranking ranking = new Ranking();
 
-                // Add server listeners.
-                server.addPropertyChangeListener(new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        String event = evt.getPropertyName();
+            // UI
+            UI ui = new UI();
+            ui.pack();
+            ui.setVisible(true);
 
-                        switch (event) {
-                            // Handle system info receive.
-                            case "system:info": {
-                                JSONObject object = (JSONObject) evt.getNewValue();
-                                System.out.println(object.toString(2));
+            // Server
+            Server server = new Server(bindHost, port);
 
-                                break;
-                            }
-                            // Handle client disconnected.
-                            case "client:disconnected": {
-                                JSONObject object = (JSONObject) evt.getNewValue();
-                                System.out.println(object.toString(2));
+            // Add server listeners.
+            server.addPropertyChangeListener(ui);
+            server.addPropertyChangeListener(ranking);
 
-                                break;
-                            }
-                            default: break;
-                        }
-                    }
-                });
-            } else {
-                client = new Client();
+            // Add ranking listeners.
+            ranking.addPropertyChangeListener(server);
+            ranking.addPropertyChangeListener(ui);
 
-                // Add client listeners.
-                client.addPropertyChangeListener(systemInfo);
+            // Start server in new thread.
+            Thread serverThread = new Thread(server);
+            serverThread.start();
 
-                // Add system info listeners.
-                systemInfo.addPropertyChangeListener(client);
+            // Client
+            Client client = new Client(bindHost, port);
 
-                client.start("25.100.136.188", 25565);
-            }
+            // Add client listeners.
+            client.addPropertyChangeListener(systemInfo);
+
+            // Add system info listeners.
+            systemInfo.addPropertyChangeListener(client);
+
+            // Start client in new thread.
+            Thread clientThread = new Thread(client);
+            clientThread.start();
 
             while(true);
         } catch (Exception e) {

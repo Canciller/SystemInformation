@@ -3,6 +3,8 @@ package com.dist.system.info.server;
 import com.dist.system.info.util.Observable;
 import org.json.JSONObject;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -12,31 +14,46 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Server extends Observable {
+public class Server extends Observable implements PropertyChangeListener, Runnable {
+    String host;
+    int port;
+
     ConcurrentHashMap<String, AsynchronousSocketChannel> clients;
 
     /**
      * Server constructor.
+     * @param host
+     * @param port
      */
-    public Server() {
+    public Server(String host, int port) {
         super();
+
+        this.host = host;
+        this.port = port;
 
         clients = new ConcurrentHashMap<>();
     }
 
     /**
-     * Start async server.
+     * Start async server with new host and port.
      * @param host
      * @param port
      * @throws IOException
      */
-    public void start(String host, int port) throws IOException {
+    private void start(String host, int port) throws IOException {
+        this.host = host;
+        this.port = port;
+
+        start();
+    }
+
+    private void start() throws IOException {
         InetSocketAddress socketAddress = new InetSocketAddress(host, port);
 
         // Create a socket channel and bind to local bind address.
         AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel.open().bind(socketAddress);
 
-        System.out.format("Servidor abierto en %s:%d\n", host, port);
+        System.out.format("[Server] Server binded %s:%d\n", host, port);
 
         // Start to accept connections from clients.
         serverSocketChannel.accept(serverSocketChannel, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
@@ -44,7 +61,7 @@ public class Server extends Observable {
             public void completed(AsynchronousSocketChannel result, AsynchronousServerSocketChannel attachment) {
                 try {
                     InetSocketAddress socketAddress = (InetSocketAddress) result.getRemoteAddress();
-                    System.out.format("Conexión aceptada %s\n", socketAddress.getHostName());
+                    System.out.format("[Server] Connection accepted %s\n", socketAddress.getHostName());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -80,6 +97,8 @@ public class Server extends Observable {
 
                     // TODO: Handle parse error.
                     JSONObject object = new JSONObject(payload);
+                    object.put("connected", true);
+                    object.put("ip_address", socketAddress.getAddress().getHostAddress());
                     object.put("hostname", socketAddress.getHostName());
 
                     Server.this.notify(object.getString("type"), null, object);
@@ -100,7 +119,7 @@ public class Server extends Observable {
     }
 
     /**
-     * Write buffer to client.
+     * Write to client.
      * @param socketChannel
      * @param payload
      */
@@ -162,7 +181,9 @@ public class Server extends Observable {
             String type = "client:disconnected";
 
             JSONObject object = new JSONObject();
+            object.put("connected", false);
             object.put("hostname", socketAddress.getHostName());
+            object.put("ip_address", socketAddress.getAddress().getHostAddress());
             object.put("type", type);
 
             Server.this.notify(type, null, object);
@@ -171,11 +192,56 @@ public class Server extends Observable {
         }
     }
 
+    /**
+     * Add client to clients.
+     * @param hostname
+     * @param socketChannel
+     */
     private void addClient(String hostname, AsynchronousSocketChannel socketChannel) {
         clients.put(hostname, socketChannel);
     }
 
+    /**
+     * Remove client from clients.
+     * @param hostname
+     */
     private void removeClient(String hostname) {
         clients.remove(hostname);
     }
+
+    /**
+     * PropertyChangeListener propertyChange.
+     * @param evt
+     */
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        String event = evt.getPropertyName();
+        switch (event) {
+            case "ranking:new:max": {
+                String hostname = (String) evt.getOldValue();
+                Long rank = (Long) evt.getNewValue();
+
+                System.out.format("[Server] Client with new max rank %s %d\n", hostname, rank);
+
+                // TODO: Implement server and client switching.
+
+                break;
+            }
+            default: break;
+        }
+    }
+
+    /**
+     * Runnable run.
+     */
+    @Override
+    public void run() {
+        try {
+            start();
+        } catch (IOException e) {
+            // TODO: Handle error.
+            e.printStackTrace();
+        }
+    }
+
 }
