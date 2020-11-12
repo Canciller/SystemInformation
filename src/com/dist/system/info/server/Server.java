@@ -214,6 +214,14 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
     }
 
     /**
+     * Get client from clients.
+     * @param hostname
+     */
+    private AsynchronousSocketChannel getClient(String hostname) {
+        return clients.get(hostname);
+    }
+
+    /**
      * PropertyChangeListener propertyChange.
      * @param evt
      */
@@ -227,7 +235,30 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
 
                 System.out.format("[Server] Client with new max rank %s %d\n", hostname, rank);
 
+                AsynchronousSocketChannel socketChannel = getClient(hostname);
+
+                if(!socketChannel.isOpen()) break;
+
+                InetSocketAddress socketAddress = null;
+
+                try {
+                    socketAddress = (InetSocketAddress) socketChannel.getRemoteAddress();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    break;
+                }
+
+                // Ignore same hostname.
+                if(hostname.equals(socketAddress.getHostName().toUpperCase())) break;
+
                 // TODO: Implement server and client switching.
+                JSONObject data = new JSONObject();
+
+                data.put("ip_address", socketAddress.getAddress().getHostAddress());
+                // TODO: Get port from server socket.
+                data.put("port", 25565);
+
+                broadcast("server:switch", data);
 
                 break;
             }

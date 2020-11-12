@@ -1,5 +1,6 @@
 package com.dist.system.info.client;
 
+import com.dist.system.info.server.Server;
 import com.dist.system.info.util.Observable;
 import org.json.JSONObject;
 
@@ -11,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.charset.StandardCharsets;
 
 public class Client extends Observable implements PropertyChangeListener, Runnable {
     String host;
@@ -91,7 +93,7 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
         socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
             public void completed(Integer result, AsynchronousSocketChannel attachment) {
-
+                read(attachment);
             }
 
             @Override
@@ -114,6 +116,38 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
         payload.put("data", data);
 
         write(socketChannel, payload.toString());
+    }
+
+    private void read(final AsynchronousSocketChannel socketChannel) {
+        final ByteBuffer buffer = ByteBuffer.allocate(2048);
+
+        // Read message from client.
+        socketChannel.read(buffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer result, AsynchronousSocketChannel attachment) {
+                try {
+                    InetSocketAddress socketAddress = (InetSocketAddress) attachment.getRemoteAddress();
+                    String hostname = socketAddress.getHostName().toUpperCase();
+
+                    String payload = new String(buffer.array(), StandardCharsets.UTF_8);
+
+                    // TODO: Handle parse error.
+                    JSONObject object = new JSONObject(payload);
+                    System.out.println(object.toString(2));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    // Start to read next message again.
+                    if(attachment.isOpen())
+                        read(attachment);
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+                // TODO: Handle read error.
+            }
+        });
     }
 
     /**
