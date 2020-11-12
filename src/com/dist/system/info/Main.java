@@ -11,7 +11,8 @@ public class Main {
             // Port
             int port = 25565;
             // Server bind host.
-            String bindHost = "25.100.136.188";
+            String serverHost = "25.100.136.188";
+            String clientHost = "25.100.136.188";
 
             // SystemInfo
             SystemInfo systemInfo = new SystemInfo();
@@ -25,7 +26,7 @@ public class Main {
             ui.setVisible(true);
 
             // Server
-            Server server = new Server(bindHost, port);
+            Server server = new Server(serverHost, port);
 
             // Add server listeners.
             server.addPropertyChangeListener(ui);
@@ -40,7 +41,7 @@ public class Main {
             serverThread.start();
 
             // Client
-            Client client = new Client(bindHost, port);
+            Client client = new Client(clientHost, port);
 
             // Add client listeners.
             client.addPropertyChangeListener(systemInfo);
