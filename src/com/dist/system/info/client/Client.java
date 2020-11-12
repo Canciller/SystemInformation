@@ -26,7 +26,7 @@ public class Client extends Observable implements PropertyChangeListener {
      * @param port
      * @throws IOException
      */
-    public void start(String host, int port) throws IOException {
+    public void start(final String host, final int port) throws IOException {
         // Create a socket channel.
         AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();
 
@@ -39,9 +39,21 @@ public class Client extends Observable implements PropertyChangeListener {
 
             @Override
             public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                // TODO: Fire property change.
                 System.out.println("Failed to connect to server.");
-                System.exit(1);
+                System.out.println("Retrying in 5 seconds...");
+
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    start(host, port);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
             }
         });
     }

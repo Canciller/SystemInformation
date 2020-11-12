@@ -65,7 +65,6 @@ public class Main {
                 client.start("25.100.136.188", 25565);
             }
 
-
             while(true);
         } catch (Exception e) {
             e.printStackTrace();
