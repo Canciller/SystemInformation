@@ -132,6 +132,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 updated = true;
                 for(int j = 0; j < model.getColumnCount(); ++j) {
                     if(j == c) continue;
+                    if(j >= row.length) continue;
                     model.setValueAt(row[j], i, j);
                 }
                 break;
