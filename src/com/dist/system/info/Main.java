@@ -12,7 +12,7 @@ public class Main {
             int port = 25565;
             // Server bind host.
             String serverHost = "25.100.136.188";
-            String clientHost = "25.100.136.188";
+            String clientHost = "25.100.132.2";
 
             // SystemInfo
             SystemInfo systemInfo = new SystemInfo();

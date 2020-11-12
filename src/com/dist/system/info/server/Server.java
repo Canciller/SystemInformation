@@ -91,15 +91,18 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
             public void completed(Integer result, AsynchronousSocketChannel attachment) {
                 try {
                     InetSocketAddress socketAddress = (InetSocketAddress) attachment.getRemoteAddress();
-                    addClient(socketAddress.getHostName(), attachment);
+                    String hostname = socketAddress.getHostName().toUpperCase();
+                    addClient(hostname, attachment);
 
                     String payload = new String(buffer.array(), StandardCharsets.UTF_8);
 
+
                     // TODO: Handle parse error.
                     JSONObject object = new JSONObject(payload);
+
                     object.put("connected", true);
                     object.put("ip_address", socketAddress.getAddress().getHostAddress());
-                    object.put("hostname", socketAddress.getHostName());
+                    object.put("hostname", hostname);
 
                     Server.this.notify(object.getString("type"), null, object);
                 } catch (IOException e) {
@@ -174,15 +177,16 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
     private void notifyClientDisconnect(AsynchronousSocketChannel socketChannel) {
         try {
             InetSocketAddress socketAddress = (InetSocketAddress) socketChannel.getRemoteAddress();
+            String hostname = socketAddress.getHostName().toUpperCase();
 
             // Remove client from list.
-            removeClient(socketAddress.getHostName());
+            removeClient(hostname);
 
             String type = "client:disconnected";
 
             JSONObject object = new JSONObject();
             object.put("connected", false);
-            object.put("hostname", socketAddress.getHostName());
+            object.put("hostname", hostname);
             object.put("ip_address", socketAddress.getAddress().getHostAddress());
             object.put("type", type);
 
