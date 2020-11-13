@@ -3,6 +3,7 @@ package com.dist.system.info.server;
 import com.dist.system.info.util.Observable;
 import org.json.JSONObject;
 
+import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,24 +22,43 @@ public class Ranking extends Observable implements PropertyChangeListener {
      * @param object
      */
     private void calculateMaxRank(JSONObject object) {
-        String key = object.getString("hostname");
+        String hostname = object.getString("hostname");
 
-        long r = calculateRank(object);
-        ranks.put(key, r);
+        long rank = calculateRank(object);
+        ranks.put(hostname, rank);
 
-        boolean newMax = false;
+        calculateMaxRank();
+    }
 
+    private void calculateMaxRank() {
+        boolean currentMaxValid = false;
+
+        long newMaxRank = -1;
+        String newMaxHostname = "";
         for(String hostname : ranks.keySet()) {
-            Long rank = ranks.get(key);
-            if(rank > maxRank) {
-                newMax = true;
+            if(hostname.equals(maxHostname)) currentMaxValid = true;
 
-                maxRank = rank;
-                maxHostname = hostname;
+            Long rank = ranks.get(hostname);
+            if(rank > newMaxRank) {
+                newMaxRank = rank;
+                newMaxHostname = hostname;
             }
         }
 
+        boolean newMax = false;
+
+        if(newMaxHostname.equals(maxHostname)) {
+            newMax = true;
+        } else if (!currentMaxValid) {
+            newMax = true;
+        } else if(newMaxRank > maxRank) {
+            newMax = true;
+        }
+
         if(newMax) {
+            maxHostname = newMaxHostname;
+            maxRank = newMaxRank;
+
             notify("ranking:new:max", maxHostname, maxRank);
         }
     }
@@ -76,6 +96,16 @@ public class Ranking extends Observable implements PropertyChangeListener {
         return rank;
     }
 
+    private void removeRank(String hostname) {
+        if(ranks.containsKey(hostname)) {
+            ranks.remove(hostname);
+
+            System.out.println("[Server] Rank of " + hostname + " removed.");
+
+            calculateMaxRank();
+        }
+    }
+
     /**
      * PropertyChangeListener propertyChange.
      * @param evt
@@ -87,6 +117,10 @@ public class Ranking extends Observable implements PropertyChangeListener {
         switch (event) {
             case "system:info": {
                 calculateMaxRank((JSONObject) evt.getNewValue());
+                break;
+            }
+            case "client:disconnected": {
+                removeRank((String) evt.getNewValue());
                 break;
             }
             default: break;

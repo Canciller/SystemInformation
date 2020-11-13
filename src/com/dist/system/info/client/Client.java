@@ -18,6 +18,8 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
     String host;
     int port;
 
+    AsynchronousSocketChannel socketChannel;
+
     /**
      * Client constructor.
      * @param host
@@ -49,7 +51,7 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
      */
     private void start() throws IOException {
         // Create a socket channel.
-        AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();
+        socketChannel = AsynchronousSocketChannel.open();
 
         // Try to connect to the server side.
         socketChannel.connect(new InetSocketAddress(host, port), socketChannel, new CompletionHandler<Void, AsynchronousSocketChannel>() {
@@ -134,6 +136,14 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
                     // TODO: Handle parse error.
                     JSONObject object = new JSONObject(payload);
                     System.out.println(object.toString(2));
+
+                    String type = object.getString("type");
+
+                    // Handle server switch.
+                    if(type.equals("server:switch"))
+                        handleServerSwitch(object.getJSONObject("data"));
+                    else
+                        Client.this.notify(type, null, object);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
@@ -148,6 +158,21 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
                 // TODO: Handle read error.
             }
         });
+    }
+
+    /**
+     * Handle server switch.
+     */
+    void handleServerSwitch(JSONObject data) throws IOException {
+        String host = data.getString("ip_address");
+        int port = data.getInt("port");
+
+        // TODO: Handle close error.
+        //socketChannel.shutdownInput();
+        //socketChannel.shutdownOutput();
+        //socketChannel.close();
+
+        start(host, port);
     }
 
     /**

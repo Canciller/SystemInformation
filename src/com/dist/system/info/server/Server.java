@@ -246,13 +246,15 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                     break;
                 }
 
+                String ipAddress = socketAddress.getAddress().getHostAddress();
+
                 // Ignore same hostname.
-                //if(hostname.equals(socketAddress.getHostName().toUpperCase())) break;
+                if(ipAddress.equals(this.host)) break;
 
                 // TODO: Implement server and client switching.
                 JSONObject data = new JSONObject();
 
-                data.put("ip_address", socketAddress.getAddress().getHostAddress());
+                data.put("ip_address", ipAddress);
                 // TODO: Get port from server socket.
                 data.put("port", 25565);
 
