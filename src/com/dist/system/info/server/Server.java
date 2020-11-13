@@ -240,7 +240,7 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
 
                 AsynchronousSocketChannel socketChannel = getClient(hostname);
 
-                if(!socketChannel.isOpen()) break;
+                if(socketChannel == null || !socketChannel.isOpen()) break;
 
                 InetSocketAddress socketAddress = null;
 
