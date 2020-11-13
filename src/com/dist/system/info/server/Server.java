@@ -104,11 +104,12 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                         object.put("connected", true);
                         object.put("ip_address", socketAddress.getAddress().getHostAddress());
                         object.put("hostname", hostname);
+
+                        Server.this.notify(object.getString("type"), null, object);
                     } catch (Exception e) {
                         failed(e, attachment);
+                        return;
                     }
-
-                    Server.this.notify(object.getString("type"), null, object);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
