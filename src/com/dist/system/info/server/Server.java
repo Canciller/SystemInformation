@@ -98,11 +98,15 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
 
 
                     // TODO: Handle parse error.
-                    JSONObject object = new JSONObject(payload);
+                    try {
+                        JSONObject object = new JSONObject(payload);
 
-                    object.put("connected", true);
-                    object.put("ip_address", socketAddress.getAddress().getHostAddress());
-                    object.put("hostname", hostname);
+                        object.put("connected", true);
+                        object.put("ip_address", socketAddress.getAddress().getHostAddress());
+                        object.put("hostname", hostname);
+                    } catch (Exception e) {
+                        failed(e, attachment);
+                    }
 
                     Server.this.notify(object.getString("type"), null, object);
                 } catch (IOException e) {

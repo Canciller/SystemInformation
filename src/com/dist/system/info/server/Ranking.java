@@ -120,7 +120,8 @@ public class Ranking extends Observable implements PropertyChangeListener {
                 break;
             }
             case "client:disconnected": {
-                removeRank((String) evt.getNewValue());
+                JSONObject object = (JSONObject) evt.getNewValue();
+                removeRank(object.getString("hostname"));
                 break;
             }
             default: break;

@@ -170,7 +170,7 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
         // TODO: Handle close error.
         //socketChannel.shutdownInput();
         //socketChannel.shutdownOutput();
-        //socketChannel.close();
+        socketChannel.close();
 
         start(host, port);
     }
