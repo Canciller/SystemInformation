@@ -120,6 +120,7 @@ public class Server extends Observer implements Runnable {
 
     /**
      * Read from client.
+     * @param socketChannel
      */
     private void read(AsynchronousSocketChannel socketChannel) {
         final ByteBuffer readBuffer = ByteBuffer.allocate(4096);

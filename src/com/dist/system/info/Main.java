@@ -4,6 +4,7 @@ import com.dist.system.info.client.Client;
 import com.dist.system.info.client.SystemInfo;
 import com.dist.system.info.server.Server;
 import com.dist.system.info.server.Ranking;
+import com.dist.system.info.util.Observer;
 
 public class Main {
     public static void main(String[] args) {
@@ -12,8 +13,8 @@ public class Main {
             int port = 25565;
 
             // Addresses
-            String myAddress = "25.100.136.188";
-            String serverAddress = "25.100.136.188";
+            String myAddress = "192.168.0.30";
+            String serverAddress = "192.168.0.42";
 
             // SystemInfo
             SystemInfo systemInfo = new SystemInfo();
@@ -43,7 +44,7 @@ public class Main {
             serverThread.start();
 
             // Client
-            Client client = new Client(serverAddress, port);
+            final Client client = new Client(serverAddress, port);
 
             // Add client observers.
             client.addObserver(systemInfo);

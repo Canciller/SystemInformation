@@ -106,8 +106,12 @@ public class Client extends Observer implements Runnable {
             public void completed(Integer bytesRead, AsynchronousSocketChannel socketChannel) {
                 if(bytesRead != -1 ) {
                     Payload payload = new Payload(readBuffer, bytesRead);
+                    payload.appendSocketHeaders(socketChannel);
                     System.out.println("[Client] Read: " + payload);
 
+                    checkServerSwitch(payload);
+
+                    notifyObservers("client:read", socketChannel, payload);
                     read();
                 } else {
                     failed(new Exception("Failed to read buffer."), socketChannel);
@@ -121,15 +125,31 @@ public class Client extends Observer implements Runnable {
         });
     }
 
-    /**
-     * Close channel.
-     */
-    private void close() {
-        if(!isOpen()) return;
+    void checkServerSwitch(Payload payload) {
+        if(!payload.getHeaderType().equals("ranking:max:rank")) return;
+
+        String address = payload.getHeaderAddress();
+        String newAddress = payload.getBody().getString("address");
+
+        if(address.equals(newAddress)) return;
 
         try {
-            socketChannel.close();
-            System.out.println("[Client] Server connection closed.");
+            start(newAddress, port);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // TODO: Handle error.
+        }
+    }
+
+    /**
+     * Close socket.
+     */
+    private void close() {
+        try {
+            if(isOpen()) {
+                socketChannel.close();
+                System.out.println("[Client] Server connection closed.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
