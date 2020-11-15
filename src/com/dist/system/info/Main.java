@@ -26,12 +26,10 @@ public class Main {
             // Ranking
             Ranking ranking = new Ranking();
 
-            /*
             // UI
             UI ui = new UI();
             ui.pack();
             ui.setVisible(true);
-            */
 
             // Server
             //Server server = new Server(myAddress, port);
@@ -39,7 +37,7 @@ public class Main {
 
             // Add server observers.
             server.addObserver(ranking);
-            //server.addObserver(ui);
+            server.addObserver(ui);
 
             // Add ranking observers.
             ranking.addObserver(server);

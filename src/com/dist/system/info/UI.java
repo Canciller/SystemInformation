@@ -1,5 +1,6 @@
 package com.dist.system.info;
 
+import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -14,8 +15,11 @@ import java.beans.PropertyChangeListener;
 
 public class UI extends JFrame implements PropertyChangeListener {
     static final String HOSTNAME_COLUMN = "Hostname";
+    static final String ADDRESS_COLUMN = "Direccion IP";
     static final String STATUS_COLUMN = "Conectado";
-    static final String RANK_COLUMN = "Rank";
+    static final String RANK_COLUMN = "Calificacion";
+
+    static final String KEY_COLUMN = ADDRESS_COLUMN;
 
     DefaultTableModel model;
     Object[][] data;
@@ -26,7 +30,7 @@ public class UI extends JFrame implements PropertyChangeListener {
     public UI() {
         String[] headers = {
                 HOSTNAME_COLUMN,
-                "Direccion IP",
+                ADDRESS_COLUMN,
                 "Modelo CPU",
                 "Velocidad CPU",
                 "Nucleos CPU",
@@ -37,15 +41,13 @@ public class UI extends JFrame implements PropertyChangeListener {
                 "Almacenamiento Libre",
                 "Almacenamiento % Libre",
                 "Sistema Operativo",
+                RANK_COLUMN,
                 STATUS_COLUMN,
-                RANK_COLUMN
         };
 
         data = new Object[0][];
 
         model = new DefaultTableModel(data, headers);
-        final JTable table = new JTable(model);
-        /*
         final JTable table = new JTable(model){
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
@@ -71,7 +73,6 @@ public class UI extends JFrame implements PropertyChangeListener {
                 super.valueChanged(e);
             }
         };
-         */
         table.getTableHeader().setReorderingAllowed(false);
         table.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
         JScrollPane scrollPane = new JScrollPane(table);
@@ -86,29 +87,27 @@ public class UI extends JFrame implements PropertyChangeListener {
 
     /**
      * Insert or update row.
-     * @param object
+     * @param payload
      */
-    void insertOrUpdate(JSONObject object) {
-        System.out.println(object.toString(2));
+    void insertOrUpdate(Payload payload) {
+        String address = payload.getHeaderAddress();
+        Object[] row = parseObject(payload);
 
-        String hostname = object.getString("hostname");
-        Object[] row = parseObject(object);
-
-        boolean updated = update(hostname, row);
+        boolean updated = update(address, row);
         if(!updated) insert(row);
     }
 
     /**
      * Find row.
-     * @param hostname
+     * @param key
      * @return
      */
-    int findRow(String hostname) {
+    int findRow(String key) {
         int row = -1;
 
-        int c = model.findColumn(HOSTNAME_COLUMN);
+        int c = model.findColumn(KEY_COLUMN);
         for(int i = 0; i < model.getRowCount(); ++i) {
-            if(model.getValueAt(i, c).equals(hostname)) {
+            if(model.getValueAt(i, c).equals(key)) {
                 row = i;
                 break;
             }
@@ -119,27 +118,23 @@ public class UI extends JFrame implements PropertyChangeListener {
 
     /**
      * Update status.
-     * @param object
      */
-    void updateStatus(JSONObject object) {
-        boolean connected = object.getBoolean("connected");
-        String hostname = object.getString("hostname");
-
-        int row = findRow(hostname);
+    void setDisconnected(String key) {
+        int row = findRow(key);
 
         if(row >= 0) {
             int col = model.findColumn(STATUS_COLUMN);
-            model.setValueAt(connected, row, col);
+            model.setValueAt(false, row, col);
         }
     }
 
     /**
      * Update rank.
-     * @param hostname
+     * @param key
      * @param rank
      */
-    void updateRank(String hostname, Long rank) {
-        int row = findRow(hostname);
+    void updateRank(String key, Long rank) {
+        int row = findRow(key);
 
         if(row >= 0) {
             int col = model.findColumn(RANK_COLUMN);
@@ -149,19 +144,19 @@ public class UI extends JFrame implements PropertyChangeListener {
 
     /**
      * Update row.
-     * @param hostname
+     * @param key
      * @param row
      */
-    boolean update(String hostname, Object[] row) {
+    boolean update(String key, Object[] row) {
         boolean updated = false;
 
-        int c = model.findColumn(HOSTNAME_COLUMN);
+        int c = model.findColumn(KEY_COLUMN);
         for(int i = 0; i < model.getRowCount(); ++i) {
-            if(model.getValueAt(i, c).equals(hostname)) {
+            if(model.getValueAt(i, c).equals(key)) {
                 updated = true;
                 for(int j = 0; j < model.getColumnCount(); ++j) {
                     if(j == c) continue;
-                    if(j >= row.length) continue;
+                    if(j >= row.length) break;
                     model.setValueAt(row[j], i, j);
                 }
                 break;
@@ -180,19 +175,20 @@ public class UI extends JFrame implements PropertyChangeListener {
     }
 
     /**
-     * Parse JSONObject to row.
-     * @param object
+     * Parse Payload to row.
+     * @param payload
      */
-    Object[] parseObject(JSONObject object) {
-        JSONObject data = object.getJSONObject("data");
+    Object[] parseObject(Payload payload) {
+        JSONObject headers = payload.getHeaders();
+        JSONObject body = payload.getBody();
 
-        JSONObject cpu = data.getJSONObject("cpu");
-        JSONObject ram = data.getJSONObject("ram");
-        JSONObject disk = data.getJSONObject("disk");
+        JSONObject cpu = body.getJSONObject("cpu");
+        JSONObject ram = body.getJSONObject("ram");
+        JSONObject disk = body.getJSONObject("disk");
 
         Object[] row = {
-                object.get("hostname"),
-                object.get("ip_address"),
+                headers.get("hostname"),
+                headers.get("address"),
                 cpu.get("model"),
                 cpu.get("frecuency_mhz"),
                 cpu.get("cores"),
@@ -202,8 +198,9 @@ public class UI extends JFrame implements PropertyChangeListener {
                 disk.get("total_bytes"),
                 disk.get("free_bytes"),
                 disk.get("free_percentage"),
-                data.getString("os"),
-                object.getBoolean("connected")
+                body.getString("os"),
+                0, // Rank
+                true, // Connected
         };
 
         return row;
@@ -215,9 +212,31 @@ public class UI extends JFrame implements PropertyChangeListener {
      */
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        String event = evt.getPropertyName();
+        String eventType = evt.getPropertyName();
+        Object newValue = evt.getNewValue();
 
-        switch (event) {
+        switch (eventType) {
+            case "server:read": {
+                Payload payload = (Payload) newValue;
+                String type = payload.getHeaderType();
+
+                switch (type) {
+                    case "client:system:info": {
+                        insertOrUpdate(payload);
+                        break;
+                    }
+                }
+
+                break;
+            }
+            case "server:client:disconnected": {
+                setDisconnected((String) newValue);
+                break;
+            }
+        }
+
+        /*
+        switch (eventType) {
             // Handle system info receive.
             case "system:info": {
                 insertOrUpdate((JSONObject) evt.getNewValue());
@@ -234,5 +253,6 @@ public class UI extends JFrame implements PropertyChangeListener {
             }
             default: break;
         }
+         */
     }
 }
