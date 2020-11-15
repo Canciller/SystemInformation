@@ -22,7 +22,6 @@ public class UI extends JFrame implements PropertyChangeListener {
     static final String KEY_COLUMN = ADDRESS_COLUMN;
 
     DefaultTableModel model;
-    Object[][] data;
 
     /**
      * UI Constructor.
@@ -31,6 +30,7 @@ public class UI extends JFrame implements PropertyChangeListener {
         String[] headers = {
                 HOSTNAME_COLUMN,
                 ADDRESS_COLUMN,
+                "Sistema Operativo",
                 "Modelo CPU",
                 "Velocidad CPU",
                 "Nucleos CPU",
@@ -40,12 +40,11 @@ public class UI extends JFrame implements PropertyChangeListener {
                 "Almacenamiento Total",
                 "Almacenamiento Libre",
                 "Almacenamiento % Libre",
-                "Sistema Operativo",
-                RANK_COLUMN,
                 STATUS_COLUMN,
+                RANK_COLUMN,
         };
 
-        data = new Object[0][];
+        Object[][] data = new Object[0][];
 
         model = new DefaultTableModel(data, headers);
         final JTable table = new JTable(model){
@@ -54,10 +53,10 @@ public class UI extends JFrame implements PropertyChangeListener {
                 Component comp = super.prepareRenderer(renderer, row, column);
                 Object value = getModel().getValueAt(row, column);
 
-                if (value.equals(false)) {
+                if (value != null && value.equals(false)) {
                     comp.setForeground(Color.red);
                     comp.setBackground(Color.red);
-                } else if (value.equals(true)) {
+                } else if (value != null && value.equals(true)) {
                     comp.setForeground(Color.GREEN);
                     comp.setBackground(Color.green);
                 }
@@ -66,11 +65,6 @@ public class UI extends JFrame implements PropertyChangeListener {
                     comp.setBackground(Color.white);
                 }
                 return comp;
-            }
-
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                super.valueChanged(e);
             }
         };
         table.getTableHeader().setReorderingAllowed(false);
@@ -189,6 +183,7 @@ public class UI extends JFrame implements PropertyChangeListener {
         Object[] row = {
                 headers.get("hostname"),
                 headers.get("address"),
+                body.getString("os"),
                 cpu.get("model"),
                 cpu.get("frecuency_mhz"),
                 cpu.get("cores"),
@@ -198,9 +193,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 disk.get("total_bytes"),
                 disk.get("free_bytes"),
                 disk.get("free_percentage"),
-                body.getString("os"),
-                0, // Rank
-                true, // Connected
+                true
         };
 
         return row;
@@ -231,6 +224,10 @@ public class UI extends JFrame implements PropertyChangeListener {
             }
             case "server:client:disconnected": {
                 setDisconnected((String) newValue);
+                break;
+            }
+            case "ranking:new:rank": {
+                updateRank((String) evt.getOldValue(), (Long) newValue);
                 break;
             }
         }

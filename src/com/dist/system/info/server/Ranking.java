@@ -68,7 +68,7 @@ public class Ranking extends Observer {
 
         //System.out.format("[Ranking] New rank for %s %d\n", address, rank);
 
-        notifyObservers("ranking:save:rank", address, rank);
+        notifyObservers("ranking:new:rank", address, rank);
     }
 
     private long calculateRank(JSONObject body) {

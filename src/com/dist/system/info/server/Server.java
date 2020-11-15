@@ -1,24 +1,25 @@
 package com.dist.system.info.server;
 
-import com.dist.system.info.util.Observable;
+import com.dist.system.info.util.Observer;
+import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
-public class Server extends Observable implements PropertyChangeListener, Runnable {
+public class Server extends Observer implements Runnable {
     String host;
     int port;
 
-    ConcurrentHashMap<String, AsynchronousSocketChannel> clients;
+    ConcurrentHashMap<String, AsynchronousSocketChannel> channels;
+    ConcurrentHashMap<String, Future<Integer>> writeFutures;
+
+    AsynchronousServerSocketChannel serverSocketChannel;
 
     /**
      * Server constructor.
@@ -31,7 +32,8 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
         this.host = host;
         this.port = port;
 
-        clients = new ConcurrentHashMap<>();
+        channels = new ConcurrentHashMap<>();
+        writeFutures = new ConcurrentHashMap<>();
     }
 
     /**
@@ -48,27 +50,23 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
     }
 
     private void start() throws IOException {
-        InetSocketAddress socketAddress = new InetSocketAddress(host, port);
-
-        // Create a socket channel and bind to local bind address.
-        AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel.open().bind(socketAddress);
+        final InetSocketAddress socketAddress = new InetSocketAddress(host, port);
+        serverSocketChannel = AsynchronousServerSocketChannel.open().bind(socketAddress);
 
         System.out.format("[Server] Server binded %s:%d\n", host, port);
 
-        // Start to accept connections from clients.
         serverSocketChannel.accept(serverSocketChannel, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
             @Override
-            public void completed(AsynchronousSocketChannel result, AsynchronousServerSocketChannel attachment) {
+            public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel serverSocketChannel) {
+                serverSocketChannel.accept(serverSocketChannel, this);
+
                 try {
-                    InetSocketAddress socketAddress = (InetSocketAddress) result.getRemoteAddress();
-                    System.out.format("[Server] Connection accepted %s\n", socketAddress.getHostName());
+                    saveChannel(socketChannel);
+                    read(socketChannel);
                 } catch (IOException e) {
+                    // TODO: Handle save channel error.
                     e.printStackTrace();
                 }
-
-                attachment.accept(attachment, this);
-
-                read(result);
             }
 
             @Override
@@ -76,204 +74,154 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                 // TODO: Handle accept failed.
             }
         });
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Read buffer received from client.
-     * @param socketChannel
+     * Write to client.
+     * @param payload
      */
-    private void read(final AsynchronousSocketChannel socketChannel) {
-        final ByteBuffer buffer = ByteBuffer.allocate(2048);
-
-        // Read message from client.
-        socketChannel.read(buffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+    private void write(AsynchronousSocketChannel socketChannel, final String payload) {
+        socketChannel.write(ByteBuffer.wrap(payload.getBytes()), socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override
-            public void completed(Integer result, AsynchronousSocketChannel attachment) {
-                try {
-                    InetSocketAddress socketAddress = (InetSocketAddress) attachment.getRemoteAddress();
-                    String hostname = socketAddress.getHostName().toUpperCase();
-                    addClient(hostname, attachment);
-
-                    String payload = new String(buffer.array(), StandardCharsets.UTF_8);
-
-
-                    // TODO: Handle parse error.
-                    try {
-                        JSONObject object = new JSONObject(payload);
-
-                        object.put("connected", true);
-                        object.put("ip_address", socketAddress.getAddress().getHostAddress());
-                        object.put("hostname", hostname);
-
-                        Server.this.notifyObservers(object.getString("type"), null, object);
-                    } catch (Exception e) {
-                        failed(e, attachment);
-                        return;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    // Start to read next message again.
-                    if(attachment.isOpen())
-                        read(attachment);
-                }
+            public void completed(Integer bytesWritten, AsynchronousSocketChannel socketChannel) {
+                if(bytesWritten == -1) failed(new Exception("Failed to write buffer."), socketChannel);
             }
 
             @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                notifyClientDisconnect(attachment);
+            public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
+                System.out.println("[Server] Write failed.");
             }
         });
     }
 
     /**
      * Write to client.
-     * @param socketChannel
      * @param payload
      */
-    private void write(AsynchronousSocketChannel socketChannel, String payload) {
-        // Convert String to ByteBuffer.
-        ByteBuffer byteBuffer = ByteBuffer.wrap(payload.getBytes());
-
-        socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
-            @Override
-            public void completed(Integer result, AsynchronousSocketChannel attachment) {
-
-            }
-
-            @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                notifyClientDisconnect(attachment);
-            }
-        });
-    }
-
-    /**
-     * Write JSONObject to client.
-     * @param socketChannel
-     * @param type
-     * @param data
-     */
-    private void write(AsynchronousSocketChannel socketChannel, String type, JSONObject data) {
-        JSONObject payload = new JSONObject();
-
-        payload.put("type", type);
-        payload.put("data", data);
-
+    private void write(AsynchronousSocketChannel socketChannel, Payload payload) {
         write(socketChannel, payload.toString());
     }
 
     /**
-     * Broadcast JSONObject to all clients.
-     * @param type
-     * @param data
+     * Write to all clients.
+     * @param payload
      */
-    private void broadcast(String type, JSONObject data) {
-        for (String hostname : clients.keySet()) {
-            AsynchronousSocketChannel socketChannel = clients.get(hostname);
-            write(socketChannel, type, data);
+    private void broadcast(Payload payload) {
+        for(String address : channels.keySet()) {
+            write(getChannelByAddress(address), payload);
         }
     }
 
     /**
-     * Notify client disconnected.
-     * @param socketChannel
+     * Read from client.
      */
-    private void notifyClientDisconnect(AsynchronousSocketChannel socketChannel) {
+    private void read(AsynchronousSocketChannel socketChannel) {
+        final ByteBuffer readBuffer = ByteBuffer.allocate(4096);
+        socketChannel.read(readBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer bytesRead, AsynchronousSocketChannel socketChannel) {
+                if(bytesRead != -1) {
+                    Payload payload = new Payload(readBuffer, bytesRead);
+                    payload.appendSocketHeaders(socketChannel);
+                    System.out.println("[Server] Read: " + payload);
+
+                    notifyObservers("server:read", socketChannel, payload);
+
+                    read(socketChannel);
+                } else {
+                    failed(new Exception("Failed to read buffer."), socketChannel);
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
+                close(socketChannel);
+            }
+        });
+    }
+
+    private InetSocketAddress getSocketAddress(AsynchronousSocketChannel socketChannel) throws IOException {
+        return (InetSocketAddress) socketChannel.getRemoteAddress();
+    }
+
+    private String getSocketHostAddress(AsynchronousSocketChannel socketChannel) throws IOException {
+        return getSocketAddress(socketChannel).getAddress().getHostAddress();
+    }
+
+    private void saveChannel(AsynchronousSocketChannel socketChannel) throws IOException {
+        channels.put(getSocketHostAddress(socketChannel), socketChannel);
+    }
+
+    private AsynchronousSocketChannel getChannel(AsynchronousSocketChannel socketChannel) throws IOException {
+        return channels.get(getSocketHostAddress(socketChannel));
+    }
+
+    private AsynchronousSocketChannel getChannelByAddress(String address) {
+        return channels.get(address);
+    }
+
+    private void deleteChannel(AsynchronousSocketChannel socketChannel) throws IOException {
+        channels.remove(getSocketHostAddress(socketChannel));
+    }
+
+    private void deleteChannelByAddress(String address) {
+        channels.remove(address);
+    }
+
+    private void close(AsynchronousSocketChannel socketChannel) {
         try {
-            InetSocketAddress socketAddress = (InetSocketAddress) socketChannel.getRemoteAddress();
-            String hostname = socketAddress.getHostName().toUpperCase();
+            String address = getSocketHostAddress(socketChannel);
+            deleteChannelByAddress(address);
 
-            // Remove client from list.
-            removeClient(hostname);
+            System.out.println("[Server] Connection closed: " + address);
 
-            String type = "client:disconnected";
+            notifyObservers("server:client:disconnected", null, address);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-            JSONObject object = new JSONObject();
-            object.put("connected", false);
-            object.put("hostname", hostname);
-            object.put("ip_address", socketAddress.getAddress().getHostAddress());
-            object.put("type", type);
-
-            Server.this.notifyObservers(type, null, object);
+        try {
+            socketChannel.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * Add client to clients.
-     * @param hostname
-     * @param socketChannel
-     */
-    private void addClient(String hostname, AsynchronousSocketChannel socketChannel) {
-        clients.put(hostname, socketChannel);
-    }
-
-    /**
-     * Remove client from clients.
-     * @param hostname
-     */
-    private void removeClient(String hostname) {
-        clients.remove(hostname);
-    }
-
-    /**
-     * Get client from clients.
-     * @param hostname
-     */
-    private AsynchronousSocketChannel getClient(String hostname) {
-        return clients.get(hostname);
-    }
-
-    /**
-     * PropertyChangeListener propertyChange.
-     * @param evt
-     */
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String event = evt.getPropertyName();
-        switch (event) {
-            case "ranking:new:max": {
-                String hostname = (String) evt.getOldValue();
-                Long rank = (Long) evt.getNewValue();
-
-                AsynchronousSocketChannel socketChannel = getClient(hostname);
-
-                if(socketChannel == null || !socketChannel.isOpen()) break;
-
-                InetSocketAddress socketAddress = null;
-
-                try {
-                    socketAddress = (InetSocketAddress) socketChannel.getRemoteAddress();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
-
-                String ipAddress = socketAddress.getAddress().getHostAddress();
-
-                // Ignore same hostname.
-                if(ipAddress.equals(this.host)) break;
-
-                // TODO: Implement server and client switching.
-                JSONObject data = new JSONObject();
-
-                data.put("ip_address", ipAddress);
-                // TODO: Get port from server socket.
-                data.put("port", 25565);
-
-                broadcast("server:switch", data);
-
-                break;
-            }
-            default: break;
+    private void closeAll() {
+        for(String hostname : channels.keySet()) {
+            close(getChannelByAddress(hostname));
         }
     }
 
-    /**
-     * Runnable run.
-     */
+    @Override
+    public void update(String eventType, Object oldValue, Object newValue) {
+        //System.out.println("[Server] Server event: " + eventType);
+
+        switch (eventType) {
+            case "ranking:calculate:max:rank:done": {
+                String address = (String) oldValue;
+                long rank = (long) newValue;
+
+                Payload payload = new Payload();
+                payload.setHeaderType("ranking:max:rank");
+
+                JSONObject body = new JSONObject();
+                body.put("rank", rank);
+                body.put("address", address);
+                payload.setBody(body);
+
+                broadcast(payload);
+                break;
+            }
+        }
+    }
+
     @Override
     public void run() {
         try {
@@ -283,5 +231,4 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
             e.printStackTrace();
         }
     }
-
 }

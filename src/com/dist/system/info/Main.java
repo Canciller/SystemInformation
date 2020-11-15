@@ -1,14 +1,9 @@
 package com.dist.system.info;
 
 import com.dist.system.info.client.Client;
-import com.dist.system.info.client.OnlyClient;
 import com.dist.system.info.client.SystemInfo;
-import com.dist.system.info.server.OnlyServer;
-import com.dist.system.info.server.Ranking;
 import com.dist.system.info.server.Server;
-import com.dist.system.info.util.Observer;
-import com.dist.system.info.util.Payload;
-import org.json.JSONObject;
+import com.dist.system.info.server.Ranking;
 
 public class Main {
     public static void main(String[] args) {
@@ -33,7 +28,7 @@ public class Main {
 
             // Server
             //Server server = new Server(myAddress, port);
-            OnlyServer server = new OnlyServer(myAddress, port);
+            Server server = new Server(myAddress, port);
 
             // Add server observers.
             server.addObserver(ranking);
@@ -41,18 +36,14 @@ public class Main {
 
             // Add ranking observers.
             ranking.addObserver(server);
-
-            /*
-            // Add server observers.
-            ranking.addListener(ui);
-             */
+            ranking.addObserver(ui);
 
             // Start server in new thread.
             Thread serverThread = new Thread(server);
             serverThread.start();
 
             // Client
-            OnlyClient client = new OnlyClient(serverAddress, port);
+            Client client = new Client(serverAddress, port);
 
             // Add client observers.
             client.addObserver(systemInfo);

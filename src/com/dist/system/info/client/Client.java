@@ -1,22 +1,26 @@
 package com.dist.system.info.client;
 
-import com.dist.system.info.util.Observable;
+import com.dist.system.info.util.Observer;
+import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.charset.StandardCharsets;
+import java.util.concurrent.*;
 
-public class Client extends Observable implements PropertyChangeListener, Runnable {
+public class Client extends Observer implements Runnable {
     String host;
     int port;
 
     AsynchronousSocketChannel socketChannel;
+
+    ByteBuffer writeBuffer = ByteBuffer.allocate(4096);
+    Future<Integer> writeFuture = null;
+
+    ByteBuffer readBuffer = ByteBuffer.allocate(4096);
 
     /**
      * Client constructor.
@@ -51,151 +55,109 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
         // Create a socket channel.
         socketChannel = AsynchronousSocketChannel.open();
 
-        // Try to connect to the server side.
-        socketChannel.connect(new InetSocketAddress(host, port), socketChannel, new CompletionHandler<Void, AsynchronousSocketChannel>() {
-            @Override
-            public void completed(Void result, AsynchronousSocketChannel attachment) {
-                System.out.println("[Client] Connected to server.");
+        try {
+            socketChannel.connect(new InetSocketAddress(host, port)).get();
+            System.out.println("[Client] Connected to server.");
 
-                Client.this.notifyObservers("client:connected", attachment, null);
-            }
-
-            @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                System.out.println("[Client] Failed to connect to server.");
-                System.out.println("[Client] Retrying in 5 seconds...");
-
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    start(host, port);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-            }
-        });
-    }
-
-    /**
-     * Write to server.
-     * @param socketChannel
-     * @param payload
-     */
-    private void write(AsynchronousSocketChannel socketChannel, String payload) {
-        // Convert String to ByteBuffer.
-        ByteBuffer byteBuffer = ByteBuffer.wrap(payload.getBytes());
-
-        socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
-            @Override
-            public void completed(Integer result, AsynchronousSocketChannel attachment) {
-                read(attachment);
-            }
-
-            @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                System.out.println("[Client] Failed to write message to server.");
-            }
-        });
-    }
-
-    /**
-     * Write JSONObject to server.
-     * @param socketChannel
-     * @param type
-     * @param data
-     */
-    private void write(AsynchronousSocketChannel socketChannel, String type, JSONObject data) {
-        JSONObject payload = new JSONObject();
-
-        payload.put("type", type);
-        payload.put("data", data);
-
-        write(socketChannel, payload.toString());
-    }
-
-    private void read(final AsynchronousSocketChannel socketChannel) {
-        final ByteBuffer buffer = ByteBuffer.allocate(2048);
-
-        // Read message from client.
-        socketChannel.read(buffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
-            @Override
-            public void completed(Integer result, AsynchronousSocketChannel attachment) {
-                try {
-                    InetSocketAddress socketAddress = (InetSocketAddress) attachment.getRemoteAddress();
-                    String hostname = socketAddress.getHostName().toUpperCase();
-
-                    String payload = new String(buffer.array(), StandardCharsets.UTF_8);
-
-                    // TODO: Handle parse error.
-                    JSONObject object = new JSONObject(payload);
-                    System.out.println(object.toString(2));
-
-                    String type = object.getString("type");
-
-                    // Handle server switch.
-                    if(type.equals("server:switch"))
-                        handleServerSwitch(object.getJSONObject("data"));
-                    else
-                        Client.this.notifyObservers(type, null, object);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    // Start to read next message again.
-                    if(attachment.isOpen())
-                        read(attachment);
-                }
-            }
-
-            @Override
-            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
-                // TODO: Handle read error.
-            }
-        });
-    }
-
-    /**
-     * Handle server switch.
-     */
-    void handleServerSwitch(JSONObject data) throws IOException {
-        String host = data.getString("ip_address");
-        int port = data.getInt("port");
-
-        // TODO: Handle close error.
-        //socketChannel.shutdownInput();
-        //socketChannel.shutdownOutput();
-        socketChannel.close();
-
-        start(host, port);
-    }
-
-    /**
-     * PropertyChangeListener propertyChange.
-     * @param evt
-     */
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String event = evt.getPropertyName();
-
-        switch (event) {
-            case "system:info:ready": {
-                AsynchronousSocketChannel socketChannel = (AsynchronousSocketChannel) evt.getOldValue();
-                JSONObject data = (JSONObject) evt.getNewValue();
-
-                write(socketChannel, "system:info", data);
-                break;
-            }
-            default: break;
+            read();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
     }
 
     /**
-     * Runnable run.
+     * Write to server.
+     * @param payload
      */
+    private void write(final String payload) {
+        while (writeFuture != null) {
+            try {
+                int bytesWrite = writeFuture.get();
+                if(bytesWrite == -1) throw new Exception("Failed to write buffer.");
+            } catch (Exception e) {
+                System.out.println("[Client] Write failed.");
+                //e.printStackTrace();
+            }
+
+            break;
+        }
+
+        writeBuffer = ByteBuffer.wrap(payload.getBytes());
+        writeFuture = socketChannel.write(writeBuffer);
+    }
+
+    /**
+     * Write to server.
+     * @param payload
+     */
+    public void write(Payload payload) {
+        write(payload.toString());
+    }
+
+    /**
+     * Read from server
+     */
+    private void read() {
+        readBuffer.clear();
+        socketChannel.read(readBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer bytesRead, AsynchronousSocketChannel socketChannel) {
+                if(bytesRead != -1 ) {
+                    Payload payload = new Payload(readBuffer, bytesRead);
+                    System.out.println("[Client] Read: " + payload);
+
+                    read();
+                } else {
+                    failed(new Exception("Failed to read buffer."), socketChannel);
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
+                System.out.println("[Client] Read failed.");
+            }
+        });
+    }
+
+    /**
+     * Close channel.
+     */
+    private void close() {
+        if(!isOpen()) return;
+
+        try {
+            socketChannel.close();
+            System.out.println("[Client] Server connection closed.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Check if channel is open.
+     * @return
+     */
+    private boolean isOpen() {
+        return socketChannel != null && socketChannel.isOpen();
+    }
+
+    @Override
+    public void update(String eventType, Object oldValue, Object newValue) {
+        //System.out.println("[Client] Client event: " + eventType);
+
+        Payload payload = new Payload();
+
+        switch (eventType) {
+            case "system:info:get:done": {
+                payload.setHeaderType("client:system:info");
+                payload.setBody((JSONObject) newValue);
+                write(payload);
+                break;
+            }
+        }
+    }
+
     @Override
     public void run() {
         try {
