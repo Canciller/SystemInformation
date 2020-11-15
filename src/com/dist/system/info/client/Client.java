@@ -72,6 +72,8 @@ public class Client extends Observer implements Runnable {
      * @param payload
      */
     private void write(final String payload) {
+        if(!isOpen()) return;
+
         while (writeFuture != null) {
             try {
                 int bytesWrite = writeFuture.get();
@@ -109,12 +111,18 @@ public class Client extends Observer implements Runnable {
                     payload.appendSocketHeaders(socketChannel);
                     System.out.println("[Client] Read: " + payload);
 
-                    boolean serverSwitch = checkServerSwitch(payload);
-                    if(serverSwitch) {
-                        System.out.println("[Client] Server switch.");
-                    } else {
+                    boolean serverSwitch = checkSwitchServer(payload);
+                    if(!serverSwitch) {
                         notifyObservers("client:read", socketChannel, payload);
-                        read();   
+                        read();
+                    } else {
+                        close();
+                        try {
+                            start(payload.getBody().getString("address"), port);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            // TODO: Handle switch error.
+                        }
                     }
                 } else {
                     failed(new Exception("Failed to read buffer."), socketChannel);
@@ -128,7 +136,7 @@ public class Client extends Observer implements Runnable {
         });
     }
 
-    boolean checkServerSwitch(Payload payload) {
+    boolean checkSwitchServer(Payload payload) {
         if(!payload.getHeaderType().equals("ranking:max:rank")) return false;
 
         String address = payload.getHeaderAddress();
