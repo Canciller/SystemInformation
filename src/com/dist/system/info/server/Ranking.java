@@ -1,53 +1,50 @@
 package com.dist.system.info.server;
 
-import com.dist.system.info.util.Observable;
+import com.dist.system.info.util.Observer;
+import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
 
-import java.awt.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Ranking extends Observable implements PropertyChangeListener {
+public class Ranking extends Observer {
     ConcurrentHashMap<String, Long> ranks;
+
+    String maxAddress;
     long maxRank = 0;
-    String maxHostname;
 
     public Ranking() {
         ranks = new ConcurrentHashMap<>();
     }
 
-    /**
-     * Calculate ranking.
-     * @param object
-     */
-    private void calculateMaxRank(JSONObject object) {
-        String hostname = object.getString("hostname");
-
-        long rank = calculateRank(object);
-        ranks.put(hostname, rank);
-
-        calculateMaxRank();
+    public String getMaxAddress() {
+        return maxAddress;
     }
 
-    private void calculateMaxRank() {
+    public long getMaxRank() {
+        return maxRank;
+    }
+
+    private boolean calculateMaxRank()
+    {
         boolean currentMaxValid = false;
+        if(ranks.isEmpty()) currentMaxValid = true;
 
         long newMaxRank = -1;
-        String newMaxHostname = "";
-        for(String hostname : ranks.keySet()) {
-            if(hostname.equals(maxHostname)) currentMaxValid = true;
+        String newMaxAddress = "";
+        for(String address : ranks.keySet()) {
+            if(address.equals(maxAddress)) currentMaxValid = true;
 
-            Long rank = ranks.get(hostname);
+            Long rank = ranks.get(address);
             if(rank > newMaxRank) {
                 newMaxRank = rank;
-                newMaxHostname = hostname;
+                newMaxAddress = address;
             }
         }
 
         boolean newMax = false;
 
-        if(newMaxHostname.equals(maxHostname)) {
+        if(newMaxAddress.equals(maxAddress)) {
             newMax = true;
         } else if (!currentMaxValid) {
             newMax = true;
@@ -56,22 +53,28 @@ public class Ranking extends Observable implements PropertyChangeListener {
         }
 
         if(newMax) {
-            maxHostname = newMaxHostname;
             maxRank = newMaxRank;
-
-            notify("ranking:new:max", maxHostname, maxRank);
+            maxAddress = newMaxAddress;
         }
+
+        return newMax;
     }
 
-    private long calculateRank(JSONObject object) {
-        JSONObject data = object.getJSONObject("data");
+    private void saveRank(Payload payload) {
+        String address = payload.getHeaderAddress();
+        long rank = calculateRank(payload.getBody());
 
-        String hostname = object.getString("hostname");
-        JSONObject cpu = data.getJSONObject("cpu");
-        JSONObject ram = data.getJSONObject("ram");
-        JSONObject disk = data.getJSONObject("disk");
+        ranks.put(address, rank);
 
-        // TODO: Implement ranking logic.
+        //System.out.format("[Ranking] New rank for %s %d\n", address, rank);
+
+        notifyObservers("ranking:save:rank", address, rank);
+    }
+
+    private long calculateRank(JSONObject body) {
+        JSONObject cpu = body.getJSONObject("cpu");
+        JSONObject ram = body.getJSONObject("ram");
+        JSONObject disk = body.getJSONObject("disk");
 
         int cpuCores = cpu.getInt("cores");
         double cpuFree = cpu.getDouble("free_percentage");
@@ -91,37 +94,37 @@ public class Ranking extends Observable implements PropertyChangeListener {
         rank += totalRAM;
         rank += freeRAM;
 
-        notify("ranking:new", hostname, rank);
-
         return rank;
     }
 
-    private void removeRank(String hostname) {
-        if(ranks.containsKey(hostname)) {
-            ranks.remove(hostname);
-
-            System.out.println("[Server] Rank of " + hostname + " removed.");
-
-            calculateMaxRank();
-        }
+    private void removeRank(String address) {
+        ranks.remove(address);
     }
 
-    /**
-     * PropertyChangeListener propertyChange.
-     * @param evt
-     */
     @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String event = evt.getPropertyName();
+    public void update(String eventType, Object oldValue, Object newValue) {
+        //System.out.println("[Ranking] Ranking event: " + eventType);
 
-        switch (event) {
-            case "system:info": {
-                calculateMaxRank((JSONObject) evt.getNewValue());
+        switch (eventType) {
+            case "server:read": {
+                Payload payload = (Payload) newValue;
+                String type = payload.getHeaderType();
+
+                switch (type) {
+                    case "client:system:info": {
+                        saveRank(payload);
+                        break;
+                    }
+                }
+
                 break;
             }
-            case "client:disconnected": {
-                JSONObject object = (JSONObject) evt.getNewValue();
-                removeRank(object.getString("hostname"));
+            case "server:client:disconnected": {
+                removeRank((String) newValue);
+            }
+            case "ranking:calculate:max:rank": {
+                boolean newMax = calculateMaxRank();
+                if(newMax) notifyObservers("ranking:calculate:max:rank:done", maxAddress, maxRank);
                 break;
             }
             default: break;

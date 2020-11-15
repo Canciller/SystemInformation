@@ -44,6 +44,8 @@ public class UI extends JFrame implements PropertyChangeListener {
         data = new Object[0][];
 
         model = new DefaultTableModel(data, headers);
+        final JTable table = new JTable(model);
+        /*
         final JTable table = new JTable(model){
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
@@ -69,6 +71,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 super.valueChanged(e);
             }
         };
+         */
         table.getTableHeader().setReorderingAllowed(false);
         table.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
         JScrollPane scrollPane = new JScrollPane(table);

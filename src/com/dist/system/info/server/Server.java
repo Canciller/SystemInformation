@@ -105,7 +105,7 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
                         object.put("ip_address", socketAddress.getAddress().getHostAddress());
                         object.put("hostname", hostname);
 
-                        Server.this.notify(object.getString("type"), null, object);
+                        Server.this.notifyObservers(object.getString("type"), null, object);
                     } catch (Exception e) {
                         failed(e, attachment);
                         return;
@@ -195,7 +195,7 @@ public class Server extends Observable implements PropertyChangeListener, Runnab
             object.put("ip_address", socketAddress.getAddress().getHostAddress());
             object.put("type", type);
 
-            Server.this.notify(type, null, object);
+            Server.this.notifyObservers(type, null, object);
         } catch (IOException e) {
             e.printStackTrace();
         }

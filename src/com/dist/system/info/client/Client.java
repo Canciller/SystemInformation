@@ -1,6 +1,5 @@
 package com.dist.system.info.client;
 
-import com.dist.system.info.server.Server;
 import com.dist.system.info.util.Observable;
 import org.json.JSONObject;
 
@@ -9,7 +8,6 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +57,7 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
             public void completed(Void result, AsynchronousSocketChannel attachment) {
                 System.out.println("[Client] Connected to server.");
 
-                Client.this.notify("client:connected", attachment, null);
+                Client.this.notifyObservers("client:connected", attachment, null);
             }
 
             @Override
@@ -143,7 +141,7 @@ public class Client extends Observable implements PropertyChangeListener, Runnab
                     if(type.equals("server:switch"))
                         handleServerSwitch(object.getJSONObject("data"));
                     else
-                        Client.this.notify(type, null, object);
+                        Client.this.notifyObservers(type, null, object);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {

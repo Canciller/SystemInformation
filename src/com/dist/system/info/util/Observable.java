@@ -14,29 +14,29 @@ public class Observable {
     }
 
     /**
-     * Add change listener.
-     * @param pcl
+     * Add listener.
+     * @param observer
      */
-    public void addPropertyChangeListener(PropertyChangeListener pcl) {
-        support.addPropertyChangeListener(pcl);
+    public void addObserver(PropertyChangeListener observer) {
+        support.addPropertyChangeListener(observer);
     }
 
     /**
-     * Remove change listener.
-     * @param pcl
+     * Remove listener.
+     * @param observer
      */
-    public void removePropertyChangeListener(PropertyChangeListener pcl) {
-        support.removePropertyChangeListener(pcl);
+    public void removeObserver(PropertyChangeListener observer) {
+        support.removePropertyChangeListener(observer);
     }
 
     /**
      * Notify listeners.
-     * @param type
+     * @param eventType
      * @param oldValue
      * @param newValue
      */
-    public void notify(String type, Object oldValue, Object newValue)
+    public void notifyObservers(String eventType, Object oldValue, Object newValue)
     {
-        support.firePropertyChange(type, oldValue, newValue);
+        support.firePropertyChange(eventType, oldValue, newValue);
     }
 }

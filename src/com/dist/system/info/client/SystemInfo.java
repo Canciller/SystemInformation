@@ -1,14 +1,12 @@
 package com.dist.system.info.client;
 
-import com.dist.system.info.util.Observable;
+import com.dist.system.info.util.Observer;
 import org.hyperic.sigar.*;
 import org.json.JSONObject;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.Properties;
 
-public class SystemInfo extends Observable implements PropertyChangeListener {
+public class SystemInfo extends Observer {
     Sigar sigar;
 
     /**
@@ -113,18 +111,19 @@ public class SystemInfo extends Observable implements PropertyChangeListener {
     }
 
     @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String event = evt.getPropertyName();
+    public void update(String eventType, Object oldValue, Object newValue) {
+        //System.out.println("[SystemInfo] SystemInfo event: " + eventType);
 
-        switch (event) {
-            case "client:connected": {
-                notify(
-                        "system:info:ready",
-                        evt.getOldValue(),
-                        get());
+        switch (eventType) {
+            case "system:info:get": {
+                JSONObject data = get();
+
+                //System.out.println("[SystemInfo] System info retrieved: " + data.toString());
+
+                notifyObservers("system:info:get:done", null, data);
+
                 break;
             }
-            default: break;
         }
     }
 }
