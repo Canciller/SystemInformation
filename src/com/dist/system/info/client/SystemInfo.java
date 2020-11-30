@@ -6,18 +6,23 @@ import org.json.JSONObject;
 
 import java.util.Properties;
 
-public class SystemInfo extends Observer {
+public class SystemInfo extends Observer implements Runnable {
     Sigar sigar;
+    DownloadBandwidth downloadBandwidth;
+    NetworkInfo networkInfo;
 
     /**
      * SystemInfo constructor.
      */
     public SystemInfo() {
         sigar = new Sigar();
+        downloadBandwidth = new DownloadBandwidth();
+        networkInfo = new NetworkInfo();
     }
 
     /**
      * Get system information.
+     * @return
      */
     public JSONObject get() {
         // TODO: Get real information.
@@ -28,6 +33,7 @@ public class SystemInfo extends Observer {
             object.put("disk", getDiskInfo());
             object.put("ram", getRAMInfo());
             object.put("os", getOSInfo());
+            getNetworkInfo();
         } catch (SigarException e) {
             e.printStackTrace();
         }
@@ -38,6 +44,7 @@ public class SystemInfo extends Observer {
     /**
      * Get disk info.
      * @throws SigarException
+     * @return
      */
     public JSONObject getDiskInfo() throws SigarException {
         FileSystemUsage diskUsage = sigar.getFileSystemUsage("/");
@@ -59,6 +66,7 @@ public class SystemInfo extends Observer {
     /**
      * Get cpu info.
      * @throws SigarException
+     * @return
      */
     public JSONObject getCPUInfo() throws SigarException {
         CpuInfo infos[] = sigar.getCpuInfoList();
@@ -87,6 +95,7 @@ public class SystemInfo extends Observer {
     /**
      * Get RAM info.
      * @throws SigarException
+     * @return
      */
     public JSONObject getRAMInfo() throws SigarException {
         Mem mem = sigar.getMem();
@@ -110,6 +119,20 @@ public class SystemInfo extends Observer {
         return properties.getProperty("os.name");
     }
 
+    /**
+     * Get Network info.
+     * @return
+     */
+    public JSONObject getNetworkInfo() {
+        JSONObject object = new JSONObject();
+        double maxSpeed = downloadBandwidth.calculate();
+        double currSpeed = networkInfo.get();
+        System.out.println("CurrSpeed: " + currSpeed);
+        System.out.println("MaxSpeed: " + maxSpeed);
+
+        return object;
+    }
+
     @Override
     public void update(String eventType, Object oldValue, Object newValue) {
         //System.out.println("[SystemInfo] SystemInfo event: " + eventType);
@@ -123,6 +146,19 @@ public class SystemInfo extends Observer {
                 notifyObservers("system:info:get:done", null, data);
 
                 break;
+            }
+        }
+    }
+
+    @Override
+    public void run() {
+        while(true) {
+            update("system:info:get", null, null);
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

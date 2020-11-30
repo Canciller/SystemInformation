@@ -13,8 +13,8 @@ public class Main {
             int port = 25565;
 
             // Addresses
-            String myAddress = "192.168.0.30";
-            String serverAddress = "192.168.0.42";
+            String myAddress = "25.100.136.188";
+            String serverAddress = "25.100.136.188";
 
             // SystemInfo
             SystemInfo systemInfo = new SystemInfo();
@@ -56,9 +56,12 @@ public class Main {
             Thread clientThread = new Thread(client);
             clientThread.start();
 
-            // Run system info and ranking in main thread.
+            // Start system info in new thread.
+            Thread systemInfoThread = new Thread(systemInfo);
+            systemInfoThread.start();
+
+            // Run ranking in main thread.
             while(true) {
-                systemInfo.update("system:info:get", null, null);
                 ranking.update("ranking:calculate:max:rank", null, null);
 
                 try {
