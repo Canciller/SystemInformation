@@ -33,7 +33,7 @@ public class SystemInfo extends Observer implements Runnable {
             object.put("disk", getDiskInfo());
             object.put("ram", getRAMInfo());
             object.put("os", getOSInfo());
-            getNetworkInfo();
+            object.put("network", getNetworkInfo());
         } catch (SigarException e) {
             e.printStackTrace();
         }
@@ -123,15 +123,15 @@ public class SystemInfo extends Observer implements Runnable {
      * Get Network info.
      * @return
      */
-    public JSONObject getNetworkInfo() {
-        JSONObject object = new JSONObject();
+    public double getNetworkInfo() {
+        double percentage = 0;
         double maxSpeed = downloadBandwidth.calculate();
         double currSpeed = networkRxInfo.get();
 
-        System.out.println("MaxSpeed: " + maxSpeed);
-        System.out.println("CurrSpeed: " + currSpeed);
+        //System.out.println("MaxSpeed: " + maxSpeed);
+        //System.out.println("CurrSpeed: " + currSpeed);
 
-        return object;
+        return percentage;
     }
 
     @Override
