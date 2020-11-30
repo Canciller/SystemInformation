@@ -1,40 +1,42 @@
 package com.dist.system.info.client;
 
 import org.hyperic.sigar.*;
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkInfo {
+public class NetworkRxInfo {
     Map<String, Long> rxCurrentMap = new HashMap<String, Long>();
     Map<String, List<Long>> rxChangeMap = new HashMap<String, List<Long>>();
-    Map<String, Long> txCurrentMap = new HashMap<String, Long>();
-    Map<String, List<Long>> txChangeMap = new HashMap<String, List<Long>>();
 
     Sigar sigar;
 
-    public NetworkInfo() {
+    public NetworkRxInfo() {
         this.sigar = new Sigar();
+
+        try {
+            getMetric();
+        } catch (SigarException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
-        NetworkInfo networkInfo = new NetworkInfo();
+        NetworkRxInfo networkInfo = new NetworkRxInfo();
 
         while(true) {
             double download = networkInfo.get();
-            System.out.println("download: " + download);
+            //System.out.println("download: " + download);
         }
     }
 
     public double get() {
         try {
-            Long[] m = getMetric();
-            long download = m[0];
-            //System.out.println(Sigar.formatSize(download));
-            return m[0].doubleValue() / 1e4;
+            Long download = getMetric();
+            System.out.println("download: " + Sigar.formatSize(download));
+            return download.doubleValue();
         } catch (SigarException e) {
             e.printStackTrace();
         }
@@ -42,7 +44,7 @@ public class NetworkInfo {
         return 0;
     }
 
-    Long[] getMetric() throws SigarException {
+    Long getMetric() throws SigarException {
         for (String ni : sigar.getNetInterfaceList()) {
             NetInterfaceStat netStat = sigar.getNetInterfaceStat(ni);
             NetInterfaceConfig ifConfig = sigar.getNetInterfaceConfig(ni);
@@ -55,20 +57,15 @@ public class NetworkInfo {
             if (hwaddr != null) {
                 long rxCurrenttmp = netStat.getRxBytes();
                 saveChange(rxCurrentMap, rxChangeMap, hwaddr, rxCurrenttmp, ni);
-                long txCurrenttmp = netStat.getTxBytes();
-                saveChange(txCurrentMap, txChangeMap, hwaddr, txCurrenttmp, ni);
             }
         }
 
         long totalrxDown = getMetricData(rxChangeMap);
-        long totaltxUp = getMetricData(txChangeMap);
 
         for (List<Long> l : rxChangeMap.values())
             l.clear();
-        for (List<Long> l : txChangeMap.values())
-            l.clear();
 
-        return new Long[] { totalrxDown, totaltxUp };
+        return totalrxDown;
     }
 
     long getMetricData(Map<String, List<Long>> rxChangeMap) {
@@ -84,8 +81,11 @@ public class NetworkInfo {
     }
 
     void saveChange(Map<String, Long> currentMap,
-                                   Map<String, List<Long>> changeMap, String hwaddr, long current,
-                                   String ni) {
+                    Map<String, List<Long>> changeMap,
+                    String hwaddr,
+                    long current,
+                    String ni)
+    {
         Long oldCurrent = currentMap.get(ni);
         if (oldCurrent != null) {
             List<Long> list = changeMap.get(hwaddr);

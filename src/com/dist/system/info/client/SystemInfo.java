@@ -9,7 +9,7 @@ import java.util.Properties;
 public class SystemInfo extends Observer implements Runnable {
     Sigar sigar;
     DownloadBandwidth downloadBandwidth;
-    NetworkInfo networkInfo;
+    NetworkRxInfo networkInfo;
 
     /**
      * SystemInfo constructor.
@@ -17,7 +17,7 @@ public class SystemInfo extends Observer implements Runnable {
     public SystemInfo() {
         sigar = new Sigar();
         downloadBandwidth = new DownloadBandwidth();
-        networkInfo = new NetworkInfo();
+        networkInfo = new NetworkRxInfo();
     }
 
     /**
