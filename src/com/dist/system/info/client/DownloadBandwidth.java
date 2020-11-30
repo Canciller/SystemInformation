@@ -1,19 +1,13 @@
 package com.dist.system.info.client;
 
-import org.json.JSONObject;
-
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 
 public class DownloadBandwidth {
-    static final String DOWNLOAD_URL = "https://www.pexels.com/video/5652690/download";
+    static final String DOWNLOAD_URL = "http://189.152.118.105/pexels-kelly-lacy-5652690.mp4";
 
     public static void main(String[] args) {
         DownloadBandwidth downloadBandwidth = new DownloadBandwidth();
