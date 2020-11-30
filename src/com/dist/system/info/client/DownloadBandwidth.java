@@ -15,6 +15,12 @@ import java.nio.channels.ReadableByteChannel;
 public class DownloadBandwidth {
     static final String DOWNLOAD_URL = "https://www.pexels.com/video/5652690/download";
 
+    public static void main(String[] args) {
+        DownloadBandwidth downloadBandwidth = new DownloadBandwidth();
+        double maxSpeed = downloadBandwidth.calculate();
+        System.out.println("Download bandwidth: " + maxSpeed);
+    }
+
     public double calculate() {
         double speed = 0;
 

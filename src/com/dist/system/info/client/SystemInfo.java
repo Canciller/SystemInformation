@@ -9,6 +9,7 @@ import java.util.Properties;
 public class SystemInfo extends Observer implements Runnable {
     Sigar sigar;
     DownloadBandwidth downloadBandwidth;
+    NetworkRxInfo networkRxInfo;
 
     /**
      * SystemInfo constructor.
@@ -16,6 +17,7 @@ public class SystemInfo extends Observer implements Runnable {
     public SystemInfo() {
         sigar = new Sigar();
         downloadBandwidth = new DownloadBandwidth();
+        networkRxInfo = new NetworkRxInfo();
     }
 
     /**
@@ -124,7 +126,10 @@ public class SystemInfo extends Observer implements Runnable {
     public JSONObject getNetworkInfo() {
         JSONObject object = new JSONObject();
         double maxSpeed = downloadBandwidth.calculate();
+        double currSpeed = networkRxInfo.get();
+
         System.out.println("MaxSpeed: " + maxSpeed);
+        System.out.println("CurrSpeed: " + currSpeed);
 
         return object;
     }
