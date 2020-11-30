@@ -26,18 +26,20 @@ public class NetworkRxInfo {
     public static void main(String[] args) {
         NetworkRxInfo networkInfo = new NetworkRxInfo();
 
-        while(true) {
-            double download = networkInfo.get();
-            //System.out.println("download: " + download);
-        }
+        double download = networkInfo.get();
+        System.out.println("Download: " + download);
     }
 
     public double get() {
         try {
             Long download = getMetric();
-            System.out.println("download: " + Sigar.formatSize(download));
-            return download.doubleValue();
-        } catch (SigarException e) {
+            for(int i = 0; i < 5; ++i) {
+                download = getMetric();
+                Thread.sleep(1000);
+            }
+
+            return download.doubleValue() / 1e6;
+        } catch (SigarException | InterruptedException e) {
             e.printStackTrace();
         }
 
