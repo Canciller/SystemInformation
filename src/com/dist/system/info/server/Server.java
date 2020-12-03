@@ -144,13 +144,13 @@ public class Server extends Observer implements Runnable {
             @Override
             public void completed(Integer bytesWritten, AsynchronousSocketChannel socketChannel) {
                 if(bytesWritten == -1) failed(new Exception("Failed to write buffer."), socketChannel);
-                else writeServerSwitchMutex.unlock();
+                unlockServerSwitchMutex();
             }
 
             @Override
             public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
                 //System.out.println("[Server] Write failed.");
-                writeServerSwitchMutex.unlock();
+                unlockServerSwitchMutex();
             }
         });
     }
@@ -170,7 +170,7 @@ public class Server extends Observer implements Runnable {
         int totalChannels = channels.size();
         while(broadcastClients.get() != totalChannels);
 
-        writeServerSwitchMutex.unlock();
+        unlockServerSwitchMutex();
     }
 
     /**
@@ -253,6 +253,11 @@ public class Server extends Observer implements Runnable {
         for(String hostname : channels.keySet()) {
             close(getChannelByAddress(hostname));
         }
+    }
+
+    void unlockServerSwitchMutex() {
+        if(writeServerSwitchMutex.isHeldByCurrentThread() && writeServerSwitchMutex.isLocked())
+            writeServerSwitchMutex.unlock();
     }
 
     @Override
