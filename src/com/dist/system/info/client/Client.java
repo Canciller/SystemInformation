@@ -1,5 +1,6 @@
 package com.dist.system.info.client;
 
+import com.dist.system.info.server.Server;
 import com.dist.system.info.util.Observer;
 import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
@@ -124,9 +125,14 @@ public class Client extends Observer implements Runnable {
                         notifyObservers("client:read", socketChannel, payload);
                         read();
                     } else {
+                        String newHost = payload.getBody().getString("address");
+
+                        // TODO: Do not use Server to change this.
+                        Server.connectedHost = newHost;
+
                         close();
                         try {
-                            start(payload.getBody().getString("address"), port);
+                            start(newHost, port);
                         } catch (IOException e) {
                             e.printStackTrace();
                             // TODO: Handle switch error.
@@ -145,7 +151,10 @@ public class Client extends Observer implements Runnable {
     }
 
     boolean checkSwitchServer(Payload payload) {
-        if(!payload.getHeaderType().equals("ranking:max:rank")) return false;
+        Boolean newMaxRank = payload.getHeaderType().equals("ranking:max:rank"),
+                serverSwitch = payload.getHeaders().equals("server:switch");
+
+        if(!(newMaxRank || serverSwitch)) return false;
 
         String address = payload.getHeaderAddress();
         String newAddress = payload.getBody().getString("address");

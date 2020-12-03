@@ -13,6 +13,8 @@ import java.nio.channels.CompletionHandler;
 import java.util.concurrent.*;
 
 public class Server extends Observer implements Runnable {
+    public static String connectedHost = null;
+
     String host;
     int port;
 
@@ -31,6 +33,8 @@ public class Server extends Observer implements Runnable {
 
         this.host = host;
         this.port = port;
+
+        connectedHost = host;
 
         channels = new ConcurrentHashMap<>();
         writeFutures = new ConcurrentHashMap<>();
@@ -61,8 +65,20 @@ public class Server extends Observer implements Runnable {
                 serverSocketChannel.accept(serverSocketChannel, this);
 
                 try {
-                    saveChannel(socketChannel);
-                    read(socketChannel);
+                    if(connectedHost.equals(host)) {
+                        saveChannel(socketChannel);
+                        read(socketChannel);
+                    } else {
+                        Payload serverSwitchPayload = new Payload();
+                        serverSwitchPayload.setHeaderType("server:switch");
+
+                        JSONObject body = new JSONObject();
+                        body.put("address", connectedHost);
+
+                        serverSwitchPayload.setBody(body);
+
+                        write(socketChannel, serverSwitchPayload);
+                    }
                 } catch (IOException e) {
                     // TODO: Handle save channel error.
                     e.printStackTrace();
