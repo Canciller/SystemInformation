@@ -31,7 +31,7 @@ public class Server extends Observer implements Runnable {
     AtomicInteger broadcastClients;
 
     AtomicLong rankingStart;
-    final long rankingWait = 15; // seconds
+    final long rankingWait = 30; // seconds
 
     /**
      * Server constructor.
