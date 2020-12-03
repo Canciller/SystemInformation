@@ -58,7 +58,7 @@ public class Client extends Observer implements Runnable {
 
         try {
             socketChannel.connect(new InetSocketAddress(host, port)).get();
-            System.out.println("[Client] Connected to server.");
+            System.out.println("[Client] Connected to server: " + host);
 
             read();
         } catch (InterruptedException e) {
