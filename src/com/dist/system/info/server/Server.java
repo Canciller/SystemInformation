@@ -11,9 +11,11 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Server extends Observer implements Runnable {
-    public static String connectedHost = null;
+    public static String connectedHost;
 
     String host;
     int port;
@@ -22,6 +24,9 @@ public class Server extends Observer implements Runnable {
     ConcurrentHashMap<String, Future<Integer>> writeFutures;
 
     AsynchronousServerSocketChannel serverSocketChannel;
+
+    ReentrantLock writeServerSwitchMutex;
+    AtomicInteger broadcastClients;
 
     /**
      * Server constructor.
@@ -38,6 +43,9 @@ public class Server extends Observer implements Runnable {
 
         channels = new ConcurrentHashMap<>();
         writeFutures = new ConcurrentHashMap<>();
+
+        writeServerSwitchMutex = new ReentrantLock();
+        broadcastClients = new AtomicInteger(0);
     }
 
     /**
@@ -77,7 +85,7 @@ public class Server extends Observer implements Runnable {
 
                         serverSwitchPayload.setBody(body);
 
-                        write(socketChannel, serverSwitchPayload);
+                        writeServerSwitch(socketChannel, serverSwitchPayload);
                     }
                 } catch (IOException e) {
                     // TODO: Handle save channel error.
@@ -107,11 +115,13 @@ public class Server extends Observer implements Runnable {
             @Override
             public void completed(Integer bytesWritten, AsynchronousSocketChannel socketChannel) {
                 if(bytesWritten == -1) failed(new Exception("Failed to write buffer."), socketChannel);
+                else broadcastClients.incrementAndGet();
             }
 
             @Override
             public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
                 //System.out.println("[Server] Write failed.");
+                broadcastClients.incrementAndGet();
             }
         });
     }
@@ -124,14 +134,43 @@ public class Server extends Observer implements Runnable {
         write(socketChannel, payload.toString());
     }
 
+
+    private void writeServerSwitch(AsynchronousSocketChannel socketChannel, Payload payload) {
+        String message = payload.toString();
+
+        writeServerSwitchMutex.lock();
+
+        socketChannel.write(ByteBuffer.wrap(message.getBytes()), socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer bytesWritten, AsynchronousSocketChannel socketChannel) {
+                if(bytesWritten == -1) failed(new Exception("Failed to write buffer."), socketChannel);
+                else writeServerSwitchMutex.unlock();
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
+                //System.out.println("[Server] Write failed.");
+                writeServerSwitchMutex.unlock();
+            }
+        });
+    }
+
     /**
      * Write to all clients.
      * @param payload
      */
     private void broadcast(Payload payload) {
+        writeServerSwitchMutex.lock();
+        broadcastClients.set(0);
+
         for(String address : channels.keySet()) {
             write(getChannelByAddress(address), payload);
         }
+
+        int totalChannels = channels.size();
+        while(broadcastClients.get() != totalChannels);
+
+        writeServerSwitchMutex.unlock();
     }
 
     /**
