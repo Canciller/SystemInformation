@@ -11,6 +11,8 @@ public class SystemInfo extends Observer implements Runnable {
     DownloadBandwidth downloadBandwidth;
     NetworkRxInfo networkRxInfo;
 
+    double networkFreePercentage = 100;
+
     /**
      * SystemInfo constructor.
      */
@@ -34,7 +36,7 @@ public class SystemInfo extends Observer implements Runnable {
             object.put("ram", getRAMInfo());
             object.put("os", getOSInfo());
             //object.put("network", getNetworkInfo());
-            object.put("network", 0);
+            object.put("network", networkFreePercentage);
         } catch (SigarException e) {
             e.printStackTrace();
         }
@@ -150,6 +152,22 @@ public class SystemInfo extends Observer implements Runnable {
 
     @Override
     public void run() {
+        Thread networkThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true) {
+                    networkFreePercentage = getNetworkInfo();
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        networkThread.start();
+
         while(true) {
             update("system:info:get", null, null);
 
