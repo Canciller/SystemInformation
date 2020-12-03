@@ -83,6 +83,8 @@ public class Ranking extends Observer {
         int totalRAM = ram.getInt("total_megabytes");
         double freeRAM = ram.getDouble("free_percentage");
 
+        double freeNetwork = body.getDouble("network");
+
         long rank = 0;
 
         // CPU
@@ -93,6 +95,9 @@ public class Ranking extends Observer {
         // RAM
         rank += totalRAM;
         rank += freeRAM;
+
+        // Network
+        rank += freeNetwork;
 
         return rank;
     }

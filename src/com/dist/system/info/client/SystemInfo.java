@@ -124,14 +124,10 @@ public class SystemInfo extends Observer implements Runnable {
      * @return
      */
     public double getNetworkInfo() {
-        double percentage = 0;
         double maxSpeed = downloadBandwidth.calculate();
         double currSpeed = networkRxInfo.get();
 
-        //System.out.println("MaxSpeed: " + maxSpeed);
-        //System.out.println("CurrSpeed: " + currSpeed);
-
-        return percentage;
+        return 100 - currSpeed * 100 / maxSpeed;
     }
 
     @Override

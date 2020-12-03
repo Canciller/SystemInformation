@@ -40,6 +40,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 "Almacenamiento Total",
                 "Almacenamiento Libre",
                 "Almacenamiento % Libre",
+                "% Libre de red",
                 STATUS_COLUMN,
                 RANK_COLUMN,
         };
@@ -193,6 +194,7 @@ public class UI extends JFrame implements PropertyChangeListener {
                 disk.get("total_bytes"),
                 disk.get("free_bytes"),
                 disk.get("free_percentage"),
+                body.get("network"),
                 true
         };
 
