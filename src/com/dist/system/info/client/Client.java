@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.*;
 
 public class Client extends Observer implements Runnable {
@@ -87,7 +88,11 @@ public class Client extends Observer implements Runnable {
         }
 
         writeBuffer = ByteBuffer.wrap(payload.getBytes());
-        writeFuture = socketChannel.write(writeBuffer);
+        try {
+            writeFuture = socketChannel.write(writeBuffer);
+        } catch (NotYetConnectedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
