@@ -132,8 +132,12 @@ public class Client extends Observer implements Runnable {
 
                         close();
                         try {
+                            if(!newHost.equals(Server.serverHost)) {
+                                Thread.sleep(5000);
+                            }
+
                             start(newHost, port);
-                        } catch (IOException e) {
+                        } catch (IOException | InterruptedException e) {
                             e.printStackTrace();
                             // TODO: Handle switch error.
                         }

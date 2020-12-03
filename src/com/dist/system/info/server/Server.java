@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Server extends Observer implements Runnable {
     public static String connectedHost;
+    public static String serverHost;
 
     String host;
     int port;
@@ -44,6 +45,7 @@ public class Server extends Observer implements Runnable {
         this.host = host;
         this.port = port;
 
+        serverHost = host;
         connectedHost = host;
 
         channels = new ConcurrentHashMap<>();
