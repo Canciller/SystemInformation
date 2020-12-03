@@ -65,6 +65,7 @@ public class Client extends Observer implements Runnable {
             e.printStackTrace();
         } catch (ExecutionException e) {
             //e.printStackTrace();
+            System.out.println("[Client] Failed to connect to server.");
         }
     }
 

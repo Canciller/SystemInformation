@@ -95,7 +95,7 @@ public class Server extends Observer implements Runnable {
 
             @Override
             public void failed(Throwable exc, AsynchronousSocketChannel socketChannel) {
-                System.out.println("[Server] Write failed.");
+                //System.out.println("[Server] Write failed.");
             }
         });
     }
