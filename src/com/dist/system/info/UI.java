@@ -1,6 +1,7 @@
 package com.dist.system.info;
 
 import com.dist.system.info.util.Payload;
+import org.hyperic.sigar.Sigar;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -181,18 +182,41 @@ public class UI extends JFrame implements PropertyChangeListener {
         JSONObject ram = body.getJSONObject("ram");
         JSONObject disk = body.getJSONObject("disk");
 
+        Long cpuMhz = cpu.getLong("frecuency_mhz");
+
+        StringBuilder cpuGhz = new StringBuilder();
+        cpuGhz.append(cpuMhz.doubleValue() / 1000);
+        cpuGhz.append("GHz");
+
+        long ramBytes = ram.getLong("total_megabytes");
+
+        StringBuilder ramGB = new StringBuilder();
+        ramGB.append(ramBytes / 1000);
+        ramGB.append("GB");
+
+        long diskTotalBytes = disk.getLong("total_bytes"),
+                diskFreeBytes = disk.getLong("free_bytes");
+
+        StringBuilder diskTotalGB = new StringBuilder(),
+                diskFreeGB = new StringBuilder();
+
+        diskTotalGB.append(diskTotalBytes / 1e6);
+        diskTotalGB.append("GB");
+        diskFreeGB.append(diskFreeBytes / 1e6);
+        diskFreeGB.append("GB");
+
         Object[] row = {
                 headers.get("hostname"),
                 headers.get("address"),
                 body.getString("os"),
                 cpu.get("model"),
-                cpu.get("frecuency_mhz"),
+                cpuGhz.toString(),
                 cpu.get("cores"),
                 cpu.get("free_percentage"),
-                ram.get("total_megabytes"),
+                ramGB.toString(),
                 ram.get("free_percentage"),
-                disk.get("total_bytes"),
-                disk.get("free_bytes"),
+                diskTotalGB.toString(),
+                diskFreeGB.toString(),
                 disk.get("free_percentage"),
                 body.get("network"),
                 true
