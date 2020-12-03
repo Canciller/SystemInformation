@@ -28,7 +28,6 @@ public class Main {
             ui.setVisible(true);
 
             // Server
-            //Server server = new Server(myAddress, port);
             Server server = new Server(myAddress, port);
 
             // Add server observers.
@@ -65,7 +64,7 @@ public class Main {
                 ranking.update("ranking:calculate:max:rank", null, null);
 
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(15000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
