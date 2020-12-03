@@ -33,7 +33,8 @@ public class SystemInfo extends Observer implements Runnable {
             object.put("disk", getDiskInfo());
             object.put("ram", getRAMInfo());
             object.put("os", getOSInfo());
-            object.put("network", getNetworkInfo());
+            //object.put("network", getNetworkInfo());
+            object.put("network", 0);
         } catch (SigarException e) {
             e.printStackTrace();
         }

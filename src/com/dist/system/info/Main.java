@@ -4,7 +4,6 @@ import com.dist.system.info.client.Client;
 import com.dist.system.info.client.SystemInfo;
 import com.dist.system.info.server.Server;
 import com.dist.system.info.server.Ranking;
-import com.dist.system.info.util.Observer;
 
 public class Main {
     public static void main(String[] args) {
