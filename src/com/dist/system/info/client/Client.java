@@ -64,7 +64,7 @@ public class Client extends Observer implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -91,7 +91,7 @@ public class Client extends Observer implements Runnable {
         try {
             writeFuture = socketChannel.write(writeBuffer);
         } catch (NotYetConnectedException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -107,6 +107,8 @@ public class Client extends Observer implements Runnable {
      * Read from server
      */
     private void read() {
+        if(!isOpen()) return;
+
         readBuffer.clear();
         socketChannel.read(readBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
             @Override

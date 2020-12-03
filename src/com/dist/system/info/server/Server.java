@@ -178,18 +178,18 @@ public class Server extends Observer implements Runnable {
     private void close(AsynchronousSocketChannel socketChannel) {
         try {
             String address = getSocketHostAddress(socketChannel);
-            deleteChannelByAddress(address);
+            //deleteChannelByAddress(address);
 
             System.out.println("[Server] Connection closed: " + address);
 
-            notifyObservers("server:client:disconnected", null, address);
+            //notifyObservers("server:client:disconnected", null, address);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         try {
-            socketChannel.close();
-        } catch (IOException e) {
+            //socketChannel.close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
