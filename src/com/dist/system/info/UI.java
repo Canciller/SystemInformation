@@ -5,7 +5,6 @@ import org.hyperic.sigar.Sigar;
 import org.json.JSONObject;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -256,26 +255,14 @@ public class UI extends JFrame implements PropertyChangeListener {
                 updateRank((String) evt.getOldValue(), (Long) newValue);
                 break;
             }
+            case "ui:show": {
+                setVisible(true);
+                break;
+            }
+            case "ui:hide": {
+                setVisible(false);
+                break;
+            }
         }
-
-        /*
-        switch (eventType) {
-            // Handle system info receive.
-            case "system:info": {
-                insertOrUpdate((JSONObject) evt.getNewValue());
-                break;
-            }
-            // Handle client disconnected.
-            case "client:disconnected": {
-                updateStatus((JSONObject) evt.getNewValue());
-                break;
-            }
-            case "ranking:new": {
-                updateRank((String) evt.getOldValue(), (Long) evt.getNewValue());
-                break;
-            }
-            default: break;
-        }
-         */
     }
 }

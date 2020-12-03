@@ -130,12 +130,16 @@ public class Client extends Observer implements Runnable {
                         // TODO: Do not use Server to change this.
                         Server.connectedHost = newHost;
 
-                        close();
                         try {
                             if(!newHost.equals(Server.serverHost)) {
+                                notifyObservers("ui:hide", null, null);
+                                System.out.println("[Client] Waiting for server switch: " + newHost);
                                 Thread.sleep(5000);
+                            } else {
+                                notifyObservers("ui:show", null, null);
                             }
 
+                            close();
                             start(newHost, port);
                         } catch (IOException | InterruptedException e) {
                             e.printStackTrace();

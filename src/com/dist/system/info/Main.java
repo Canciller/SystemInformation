@@ -24,7 +24,11 @@ public class Main {
             // UI
             UI ui = new UI();
             ui.pack();
-            ui.setVisible(true);
+            
+            if(!myAddress.equals(serverAddress))
+                ui.setVisible(false);
+            else
+                ui.setVisible(true);
 
             // Server
             Server server = new Server(myAddress, port);
@@ -46,6 +50,7 @@ public class Main {
 
             // Add client observers.
             client.addObserver(systemInfo);
+            client.addObserver(ui);
 
             // Add system info observers.
             systemInfo.addObserver(client);
