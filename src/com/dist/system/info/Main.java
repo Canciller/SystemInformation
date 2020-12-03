@@ -24,7 +24,7 @@ public class Main {
             // UI
             UI ui = new UI();
             ui.pack();
-            
+
             if(!myAddress.equals(serverAddress))
                 ui.setVisible(false);
             else
