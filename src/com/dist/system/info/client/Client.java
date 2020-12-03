@@ -152,7 +152,7 @@ public class Client extends Observer implements Runnable {
 
     boolean checkSwitchServer(Payload payload) {
         Boolean newMaxRank = payload.getHeaderType().equals("ranking:max:rank"),
-                serverSwitch = payload.getHeaders().equals("server:switch");
+                serverSwitch = payload.getHeaderType().equals("server:switch");
 
         if(!(newMaxRank || serverSwitch)) return false;
 
