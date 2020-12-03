@@ -10,8 +10,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Server extends Observer implements Runnable {
@@ -27,6 +29,9 @@ public class Server extends Observer implements Runnable {
 
     ReentrantLock writeServerSwitchMutex;
     AtomicInteger broadcastClients;
+
+    AtomicLong rankingStart;
+    final long rankingWait = 15; // seconds
 
     /**
      * Server constructor.
@@ -46,6 +51,8 @@ public class Server extends Observer implements Runnable {
 
         writeServerSwitchMutex = new ReentrantLock();
         broadcastClients = new AtomicInteger(0);
+
+        rankingStart = new AtomicLong(System.nanoTime());
     }
 
     /**
@@ -71,6 +78,8 @@ public class Server extends Observer implements Runnable {
             @Override
             public void completed(AsynchronousSocketChannel socketChannel, AsynchronousServerSocketChannel serverSocketChannel) {
                 serverSocketChannel.accept(serverSocketChannel, this);
+
+                restartRankingTimer();
 
                 try {
                     if(connectedHost.equals(host)) {
@@ -260,6 +269,11 @@ public class Server extends Observer implements Runnable {
             writeServerSwitchMutex.unlock();
     }
 
+    void restartRankingTimer() {
+        long currRankingStart = rankingStart.getAndSet(System.nanoTime());
+        System.out.println("[Server] Ranking timer restarted.");
+    }
+
     @Override
     public void update(String eventType, Object oldValue, Object newValue) {
         //System.out.println("[Server] Server event: " + eventType);
@@ -285,6 +299,27 @@ public class Server extends Observer implements Runnable {
 
     @Override
     public void run() {
+        Thread rankingThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true) {
+                    long currRankingStart = rankingStart.get();
+                    long rankingEnd = System.nanoTime();
+
+                    long duration = TimeUnit.NANOSECONDS.toSeconds(rankingEnd - currRankingStart);
+
+                    //System.out.println("[Server] Ranking timer: " + duration);
+
+                    if(duration >= rankingWait) {
+                        restartRankingTimer();
+                        notifyObservers("ranking:calculate:max:rank", null, null);
+                    }
+                }
+            }
+        });
+
+        rankingThread.start();
+
         try {
             start();
         } catch (IOException e) {

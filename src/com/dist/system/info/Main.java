@@ -60,7 +60,7 @@ public class Main {
 
             // Run ranking in main thread.
             while(true) {
-                ranking.update("ranking:calculate:max:rank", null, null);
+                //ranking.update("ranking:calculate:max:rank", null, null);
 
                 try {
                     Thread.sleep(15000);
