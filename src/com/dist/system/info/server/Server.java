@@ -5,7 +5,9 @@ import com.dist.system.info.util.Observer;
 import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
@@ -343,9 +345,20 @@ public class Server extends Observer implements Runnable {
                                 "formal"
                             };
                             Process process = Runtime.getRuntime().exec(command);
-                            process.waitFor();
-                            System.out.println("[Server] Benchmark completed.");
-                        } catch (IOException | InterruptedException e) {
+
+                            BufferedReader reader = new BufferedReader(
+                                    new InputStreamReader(process.getInputStream()));
+                            String line = "";
+                            while (true) {
+                                try {
+                                    if (!((line = reader.readLine()) != null)) break;
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                System.out.println(line);
+                            }
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
