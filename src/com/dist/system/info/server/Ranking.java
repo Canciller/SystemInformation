@@ -33,9 +33,13 @@ public class Ranking extends Observer {
         long newMaxRank = -1;
         String newMaxAddress = "";
         for(String address : ranks.keySet()) {
-            if(address.equals(maxAddress)) currentMaxValid = true;
-
             Long rank = ranks.get(address);
+
+            if(address.equals(maxAddress)) {
+                currentMaxValid = true;
+                maxRank = rank;
+            }
+
             if(rank > newMaxRank) {
                 newMaxRank = rank;
                 newMaxAddress = address;
