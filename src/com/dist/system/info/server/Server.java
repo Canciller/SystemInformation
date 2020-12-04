@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,6 +22,8 @@ public class Server extends Observer implements Runnable {
 
     String host;
     int port;
+
+    Queue<String> benchmarkQueue;
 
     ConcurrentHashMap<String, AsynchronousSocketChannel> channels;
     ConcurrentHashMap<String, Future<Integer>> writeFutures;
@@ -45,7 +48,8 @@ public class Server extends Observer implements Runnable {
         this.port = port;
 
         serverHost = host;
-        //connectedHost = host;
+
+        benchmarkQueue = new ConcurrentLinkedQueue<String>();
 
         channels = new ConcurrentHashMap<>();
         writeFutures = new ConcurrentHashMap<>();
@@ -199,6 +203,11 @@ public class Server extends Observer implements Runnable {
 
                     notifyObservers("server:read", socketChannel, payload);
 
+                    if(payload.getHeaderType().equals("benchmark")) {
+                        System.out.println("[Server] Benchmark added.");
+                        benchmarkQueue.add("benchmark");
+                    }
+
                     read(socketChannel);
                 } else {
                     failed(new Exception("Failed to read buffer."), socketChannel);
@@ -320,6 +329,25 @@ public class Server extends Observer implements Runnable {
         });
 
         rankingThread.start();
+
+        Thread benchmarkThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true) {
+                    if(!benchmarkQueue.isEmpty()) {
+                        benchmarkQueue.poll();
+                        try {
+                            Runtime.getRuntime().exec("winsat formal");
+                            System.out.println("[Server] Benchmark completed.");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+
+        benchmarkThread.start();
 
         try {
             start();
