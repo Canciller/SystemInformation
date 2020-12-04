@@ -1,6 +1,7 @@
 package com.dist.system.info;
 
 import com.dist.system.info.client.Client;
+import com.dist.system.info.client.ClientUI;
 import com.dist.system.info.client.SystemInfo;
 import com.dist.system.info.server.Server;
 import com.dist.system.info.server.Ranking;
@@ -29,10 +30,14 @@ public class Main {
             // Server
             Server server = new Server(myAddress, port);
 
+            // Client UI
+            ClientUI clientUI = new ClientUI(server.getHost());
             if(!myAddress.equals(serverAddress)) {
-                serverUI.setVisible(false);   
+                serverUI.setVisible(false);
+                clientUI.setVisible(true);
             } else {
                 serverUI.setVisible(true);
+                clientUI.setVisible(false);
             }
 
             // Add server observers.

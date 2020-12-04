@@ -329,4 +329,8 @@ public class Server extends Observer implements Runnable {
             e.printStackTrace();
         }
     }
+
+    public String getHost() {
+        return host;
+    }
 }
