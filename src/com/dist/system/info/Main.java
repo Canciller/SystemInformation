@@ -24,6 +24,7 @@ public class Main {
             Ranking ranking = new Ranking();
 
             // Server
+            Server.connectedHost = serverAddress;
             Server server = new Server(myAddress, port);
 
             // Server UI
@@ -54,7 +55,7 @@ public class Main {
             serverThread.start();
 
             // Client
-            final Client client = new Client(serverAddress, port);
+            Client client = new Client(serverAddress, port);
 
             // Add client observers.
             client.addObserver(systemInfo);

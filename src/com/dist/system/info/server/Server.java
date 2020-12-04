@@ -45,7 +45,7 @@ public class Server extends Observer implements Runnable {
         this.port = port;
 
         serverHost = host;
-        connectedHost = host;
+        //connectedHost = host;
 
         channels = new ConcurrentHashMap<>();
         writeFutures = new ConcurrentHashMap<>();
