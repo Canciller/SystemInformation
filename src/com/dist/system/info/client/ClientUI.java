@@ -9,10 +9,12 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 public class ClientUI extends JFrame implements PropertyChangeListener {
+    JLabel labelM;
+
     public ClientUI(){
         setTitle("Cliente");
 
-        JLabel labelM = new JLabel("Conectado a: " + Server.connectedHost);
+        labelM = new JLabel("Conectado a: " + Server.connectedHost);
         labelM.setBounds(100, 25, 200, 30);
 
         JButton b = new JButton("Realizar benchmark");
@@ -42,6 +44,7 @@ public class ClientUI extends JFrame implements PropertyChangeListener {
                 break;
             }
             case "server:ui:hide": {
+                labelM.setText(Server.connectedHost);
                 setVisible(true);
                 break;
             }

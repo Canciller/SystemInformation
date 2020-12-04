@@ -32,7 +32,6 @@ public class Main {
 
             // Client UI
             ClientUI clientUI = new ClientUI();
-            clientUI.pack();
 
             if(!myAddress.equals(serverAddress)) {
                 serverUI.setVisible(false);
