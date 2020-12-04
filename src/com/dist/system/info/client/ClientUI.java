@@ -1,6 +1,7 @@
 package com.dist.system.info.client;
 
 import com.dist.system.info.server.Server;
+import com.dist.system.info.util.Observable;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -9,9 +10,12 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 public class ClientUI extends JFrame implements PropertyChangeListener {
+    Observable observable;
     JLabel labelM;
 
-    public ClientUI(){
+    public ClientUI() {
+        observable = new Observable();
+
         setTitle("Cliente");
 
         labelM = new JLabel("Conectado a: " + Server.connectedHost);
@@ -22,7 +26,7 @@ public class ClientUI extends JFrame implements PropertyChangeListener {
         b.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("CACA");
+                observable.notifyObservers("benchmark", null, null);
             }
         });
 
@@ -44,10 +48,14 @@ public class ClientUI extends JFrame implements PropertyChangeListener {
                 break;
             }
             case "server:ui:hide": {
-                labelM.setText(Server.connectedHost);
+                labelM.setText("Conectado a: " + Server.connectedHost);
                 setVisible(true);
                 break;
             }
         }
+    }
+
+    public void addObserver(PropertyChangeListener observer) {
+        observable.addObserver(observer);
     }
 }

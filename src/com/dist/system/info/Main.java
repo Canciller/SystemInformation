@@ -62,6 +62,9 @@ public class Main {
             client.addObserver(serverUI);
             client.addObserver(clientUI);
 
+            // Add clientUI observers.
+            clientUI.addObserver(client);
+
             // Add system info observers.
             systemInfo.addObserver(client);
 

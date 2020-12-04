@@ -206,6 +206,11 @@ public class Client extends Observer implements Runnable {
                 write(payload);
                 break;
             }
+            case "benchmark": {
+                payload.setHeaderType("benchmark");
+                write(payload);
+                break;
+            }
         }
     }
 
