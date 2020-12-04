@@ -1,5 +1,6 @@
 package com.dist.system.info.server;
 
+import com.dist.system.info.Main;
 import com.dist.system.info.util.Observer;
 import com.dist.system.info.util.Payload;
 import org.json.JSONObject;
@@ -337,9 +338,14 @@ public class Server extends Observer implements Runnable {
                     if(!benchmarkQueue.isEmpty()) {
                         benchmarkQueue.poll();
                         try {
-                            Runtime.getRuntime().exec("winsat formal");
+                            String [] command = {
+                                "winsat",
+                                "formal"
+                            };
+                            Process process = Runtime.getRuntime().exec(command);
+                            process.waitFor();
                             System.out.println("[Server] Benchmark completed.");
-                        } catch (IOException e) {
+                        } catch (IOException | InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
