@@ -89,7 +89,7 @@ public class Ranking extends Observer {
 
         // CPU
         rank += cpuCores;
-        rank += cpuFree;
+        rank += cpuFree * 2;
         rank += cpuMhz * .1;
 
         // RAM
