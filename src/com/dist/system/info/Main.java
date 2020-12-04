@@ -23,15 +23,17 @@ public class Main {
             // Ranking
             Ranking ranking = new Ranking();
 
+            // Server
+            Server server = new Server(myAddress, port);
+
             // Server UI
             ServerUI serverUI = new ServerUI();
             serverUI.pack();
 
-            // Server
-            Server server = new Server(myAddress, port);
-
             // Client UI
-            ClientUI clientUI = new ClientUI(server.getHost());
+            ClientUI clientUI = new ClientUI();
+            clientUI.pack();
+
             if(!myAddress.equals(serverAddress)) {
                 serverUI.setVisible(false);
                 clientUI.setVisible(true);
@@ -58,6 +60,7 @@ public class Main {
             // Add client observers.
             client.addObserver(systemInfo);
             client.addObserver(serverUI);
+            client.addObserver(clientUI);
 
             // Add system info observers.
             systemInfo.addObserver(client);

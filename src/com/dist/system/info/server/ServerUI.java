@@ -1,7 +1,6 @@
 package com.dist.system.info.server;
 
 import com.dist.system.info.util.Payload;
-import org.hyperic.sigar.Sigar;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -27,6 +26,8 @@ public class ServerUI extends JFrame implements PropertyChangeListener {
      * UI Constructor.
      */
     public ServerUI() {
+        setTitle("Servidor");
+
         String[] headers = {
                 HOSTNAME_COLUMN,
                 ADDRESS_COLUMN,
@@ -255,11 +256,11 @@ public class ServerUI extends JFrame implements PropertyChangeListener {
                 updateRank((String) evt.getOldValue(), (Long) newValue);
                 break;
             }
-            case "ui:show": {
+            case "server:ui:show": {
                 setVisible(true);
                 break;
             }
-            case "ui:hide": {
+            case "server:ui:hide": {
                 setVisible(false);
                 break;
             }
