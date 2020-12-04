@@ -88,13 +88,13 @@ public class Ranking extends Observer {
         long rank = 0;
 
         // CPU
-        rank += cpuCores;
+        rank += cpuCores *.5;
         rank += cpuFree * 2;
         rank += cpuMhz * .1;
 
         // RAM
-        rank += totalRAM;
-        rank += freeRAM;
+        rank += totalRAM * .5;
+        rank += freeRAM * .5;
 
         // Network
         rank += freeNetwork;
