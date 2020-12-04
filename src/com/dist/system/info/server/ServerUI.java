@@ -1,4 +1,4 @@
-package com.dist.system.info;
+package com.dist.system.info.server;
 
 import com.dist.system.info.util.Payload;
 import org.hyperic.sigar.Sigar;
@@ -13,7 +13,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-public class UI extends JFrame implements PropertyChangeListener {
+public class ServerUI extends JFrame implements PropertyChangeListener {
     static final String HOSTNAME_COLUMN = "Hostname";
     static final String ADDRESS_COLUMN = "Direccion IP";
     static final String STATUS_COLUMN = "Conectado";
@@ -26,7 +26,7 @@ public class UI extends JFrame implements PropertyChangeListener {
     /**
      * UI Constructor.
      */
-    public UI() {
+    public ServerUI() {
         String[] headers = {
                 HOSTNAME_COLUMN,
                 ADDRESS_COLUMN,

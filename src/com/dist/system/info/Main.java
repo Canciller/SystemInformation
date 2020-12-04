@@ -4,6 +4,7 @@ import com.dist.system.info.client.Client;
 import com.dist.system.info.client.SystemInfo;
 import com.dist.system.info.server.Server;
 import com.dist.system.info.server.Ranking;
+import com.dist.system.info.server.ServerUI;
 
 public class Main {
     public static void main(String[] args) {
@@ -21,25 +22,26 @@ public class Main {
             // Ranking
             Ranking ranking = new Ranking();
 
-            // UI
-            UI ui = new UI();
-            ui.pack();
-
-            if(!myAddress.equals(serverAddress))
-                ui.setVisible(false);
-            else
-                ui.setVisible(true);
+            // Server UI
+            ServerUI serverUI = new ServerUI();
+            serverUI.pack();
 
             // Server
             Server server = new Server(myAddress, port);
 
+            if(!myAddress.equals(serverAddress)) {
+                serverUI.setVisible(false);   
+            } else {
+                serverUI.setVisible(true);
+            }
+
             // Add server observers.
             server.addObserver(ranking);
-            server.addObserver(ui);
+            server.addObserver(serverUI);
 
             // Add ranking observers.
             ranking.addObserver(server);
-            ranking.addObserver(ui);
+            ranking.addObserver(serverUI);
 
             // Start server in new thread.
             Thread serverThread = new Thread(server);
@@ -50,7 +52,7 @@ public class Main {
 
             // Add client observers.
             client.addObserver(systemInfo);
-            client.addObserver(ui);
+            client.addObserver(serverUI);
 
             // Add system info observers.
             systemInfo.addObserver(client);
