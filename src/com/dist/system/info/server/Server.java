@@ -356,7 +356,7 @@ public class Server extends Observer implements Runnable {
                                     e.printStackTrace();
                                 }
 
-                                System.out.println(line);
+                                System.out.println("[Benchmark] " + line);
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
